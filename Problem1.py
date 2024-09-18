@@ -38,7 +38,36 @@ def Coefficient_of_Determination(y,y_pred):
     r2 = 1 - (SSEres/SStotal)
     
     return r2
+
+def linear_regression(X, y):
+    """
+    Performs linear regression on the input data X and target y.
+    """
+    # Linear regression formula: (X^T X)^(-1) X^T y
+    beta = np.dot( np.dot(np.linalg.inv( np.dot(np.transpose(X),X) ), np.transpose(X)), y)  # (XT * X)** -1 * XT * Y
+
+    beta = beta.flatten()  # Converts beta to shape (5,)
     
+    return beta
+    
+
+def ridge_regression(X, y, lambda_param):
+    """
+    Performs ridge regression on the input data X and target y with regularization parameter lambda_param.
+    """
+    # Get the number of features
+    n_features = X.shape[1]
+    
+    # Identity matrix for regularization (excluding the bias term if needed)
+    I = np.eye(n_features)
+    
+    # Ridge regression formula: (X^T X + λI)^(-1) X^T y
+    ridge_term = lambda_param * I
+    beta = np.dot( np.dot(np.linalg.inv( np.add( np.dot(np.transpose(X),X), ridge_term) ), np.transpose(X)), y)
+    
+    beta_ridge = beta_ridge.flatten()  # Converts beta to shape (5,)
+    
+    return beta
 
 def main():
     
@@ -47,29 +76,36 @@ def main():
 
     # Initialize the MinMaxScaler
     scaler = MinMaxScaler()
-    Y  = np.zeros((200,1))
+    Y = np.zeros((200,1))
+    Y_rigid = np.zeros((200,1))
     y = y.reshape(-1, 1)
+    lambda_param = 0.2
+    
     # Normalize the entire dataset (all 5 features)
     normalized_data = scaler.fit_transform(data)
     y_normalised = scaler.fit_transform(y)
     #X = [normalized_data[:, 0] , normalized_data[:, 1], normalized_data[:, 2], normalized_data[:, 3], normalized_data[:, 4]]
     X = data[:, :5]  # Extracts the first 5 columns from data as a 2D array
 
+    beta = linear_regression(X, y_normalised)
     
-    #y = beta + np.sum(beta[1:i] * data[:,i]) 
-    
-    beta = np.dot( np.dot(np.linalg.inv( np.dot(np.transpose(X),X) ), np.transpose(X)), y_normalised)  # (XT * X)** -1 * XT * Y
+    beta_ridge = ridge_regression(X, y_normalised, lambda_param)
 
-    beta = beta.flatten()  # Converts beta to shape (5,)
 
     for j in range(200):
     # Calculate y_hat^j
         Y[j] = np.dot(beta, X[j, :])
+        
+    for j in range(200):
+    # Calculate y_hat^j
+        Y_rigid[j] = np.dot(beta_ridge, X[j, :])
 
     Y_normalised = scaler.fit_transform(Y)
+    Y_rigid_normalised = scaler.fit_transform(Y_rigid)
 
     r2 = Coefficient_of_Determination(y_normalised,Y_normalised)
-
+    
+    r2_rigid = Coefficient_of_Determination(y_normalised,Y_rigid_normalised)
 
     # Create the plot
     plt.figure(figsize=(10, 6))
@@ -80,11 +116,17 @@ def main():
     # plt.scatter(range(len(feature_3)), feature_3, color='green', label='Feature 3')
     # plt.scatter(range(len(feature_4)), feature_4, color='orange', label='Feature 4')
     # plt.scatter(range(len(feature_5)), feature_5, color='purple', label='Feature 5')
+    
     print("r2 :", r2)
-    plt.scatter(range(len(y_normalised)), y_normalised, color='purple', label='y')
+    print("r2_rigid :", r2_rigid)
+    
+    #scatter 
+    
+    plt.scatter(range(len(y_normalised)), y_normalised, color='red', label='y')
     plt.scatter(range(len(Y_normalised)), Y_normalised, color='blue', label='ypred')
+    plt.scatter(range(len(Y_rigid_normalised)), Y_normalised, color='green', label='yrigid')
 
-    # Add title and labels
+    #title and labels
     plt.title('Normalized Features')
     plt.xlabel('Index')
     plt.ylabel('Normalized Value')
