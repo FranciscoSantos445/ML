@@ -73,7 +73,8 @@ def main():
     data = np.load('X_train.npy')
     y = np.load('y_train.npy')
 
-    # Initialize the MinMaxScaler
+    # Initializations 
+    
     scaler = MinMaxScaler()
     Y = np.zeros((200,1))
     Y_rigid = np.zeros((200,1))
@@ -81,9 +82,9 @@ def main():
     lambda_param = 0.2
     
     # Normalize the entire dataset (all 5 features)
+    
     normalized_data = scaler.fit_transform(data)
     y_normalised = scaler.fit_transform(y)
-    #X = [normalized_data[:, 0] , normalized_data[:, 1], normalized_data[:, 2], normalized_data[:, 3], normalized_data[:, 4]]
     X = data[:, :5]  # Extracts the first 5 columns from data as a 2D array
 
     beta = linear_regression(X, y_normalised)
@@ -104,43 +105,37 @@ def main():
 
     r2 = Coefficient_of_Determination(y_normalised,Y_normalised)
     
-    r2_rigid = Coefficient_of_Determination(y_normalised,Y_rigid_normalised)
-
-    # Create the plot
-    plt.figure(figsize=(10, 6))
-
-    # # Plot each feature with a different color
-    # # plt.scatter(range(len(feature_1)), feature_1, color='red', label='Feature 1')
-    # # plt.scatter(range(len(feature_2)), feature_2, color='blue', label='Feature 2')
-    # plt.scatter(range(len(feature_3)), feature_3, color='green', label='Feature 3')
-    # plt.scatter(range(len(feature_4)), feature_4, color='orange', label='Feature 4')
-    # plt.scatter(range(len(feature_5)), feature_5, color='purple', label='Feature 5')
+    #r2_rigid = Coefficient_of_Determination(y_normalised,Y_rigid_normalised)
     
     print("r2 :", r2)
-    print("r2_rigid :", r2_rigid)
+    #print("r2_rigid :", r2_rigid)
 
     # Get the current date and time
     current_time = datetime.now()
 
     # Print the date and time
     print("Current Date and Time: ", current_time.strftime("%Y-%m-%d %H:%M:%S"))
-
     
-    #scatter 
+    #plot the data
+    
+    plt.figure(figsize=(10, 6))
+
+    # plt.scatter(range(len(feature_1)), feature_1, color='red', label='Feature 1')
+    # plt.scatter(range(len(feature_2)), feature_2, color='blue', label='Feature 2')
+    # plt.scatter(range(len(feature_3)), feature_3, color='green', label='Feature 3')
+    # plt.scatter(range(len(feature_4)), feature_4, color='orange', label='Feature 4')
+    # plt.scatter(range(len(feature_5)), feature_5, color='purple', label='Feature 5')
     
     plt.scatter(range(len(y_normalised)), y_normalised, color='red', label='y')
     plt.scatter(range(len(Y_normalised)), Y_normalised, color='blue', label='ypred')
-    plt.scatter(range(len(Y_rigid_normalised)), Y_normalised, color='green', label='yrigid')
+    #plt.scatter(range(len(Y_rigid_normalised)), Y_normalised, color='green', label='yrigid')
 
-    #title and labels
     plt.title('Normalized Features')
     plt.xlabel('Index')
     plt.ylabel('Normalized Value')
 
-    # Show legend
     plt.legend()
 
-    # Show grid and plot
     plt.grid(True)
     plt.show()
     
