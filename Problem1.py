@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
+from datetime import datetime
 
 def outliers(data):
     # Compute quartiles
@@ -21,11 +22,9 @@ def outliers(data):
     return outliers
 
 def Coefficient_of_Determination(y,y_pred):
-    
-    dif = y - y_pred
 
     # Square the residuals
-    squared_residuals = dif ** 2
+    squared_residuals = (y - y_pred) ** 2
     
     y_mean = np.mean(y)
 
@@ -119,6 +118,13 @@ def main():
     
     print("r2 :", r2)
     print("r2_rigid :", r2_rigid)
+
+    # Get the current date and time
+    current_time = datetime.now()
+
+    # Print the date and time
+    print("Current Date and Time: ", current_time.strftime("%Y-%m-%d %H:%M:%S"))
+
     
     #scatter 
     
