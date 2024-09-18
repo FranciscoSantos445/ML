@@ -65,7 +65,7 @@ def ridge_regression(X, y, lambda_param):
     ridge_term = lambda_param * I
     beta = np.dot( np.dot(np.linalg.inv( np.add( np.dot(np.transpose(X),X), ridge_term) ), np.transpose(X)), y)
     
-    beta_ridge = beta_ridge.flatten()  # Converts beta to shape (5,)
+    beta = beta.flatten()  # Converts beta to shape (5,)
     
     return beta
 
@@ -91,16 +91,16 @@ def main():
     
     beta_ridge = ridge_regression(X, y_normalised, lambda_param)
 
-
-    for j in range(200):
+    for j in range(X.shape[0]):
     # Calculate y_hat^j
         Y[j] = np.dot(beta, X[j, :])
         
-    for j in range(200):
+    for j in range(X.shape[0]):
     # Calculate y_hat^j
         Y_rigid[j] = np.dot(beta_ridge, X[j, :])
 
     Y_normalised = scaler.fit_transform(Y)
+    
     Y_rigid_normalised = scaler.fit_transform(Y_rigid)
 
     r2 = Coefficient_of_Determination(y_normalised,Y_normalised)
