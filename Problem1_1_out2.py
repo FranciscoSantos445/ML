@@ -5,25 +5,24 @@ from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV
 from sklearn.model_selection import train_test_split
 from datetime import datetime
 
-def outliers(data):
+
+def outliers(y, y_pred, X_train):
     
-    # Compute quartiles
-    Q1 = np.percentile(data, 25)
-    # Q2 = np.median(data)  # or np.percentile(data, 50)
-    Q3 = np.percentile(data, 75)
-
-    # Compute interquartile range (IQR)
-    IQR = Q3 - Q1
-
-    # Compute whiskers
-    lower_whisker = np.min(data[data >= Q1 - 1.5 * IQR])
-    upper_whisker = np.max(data[data <= Q3 + 1.5 * IQR])
-
-    # Find outliers
-    #outliers = np.where(data[(data < Q1 - 1.5 * IQR) | (data > Q3 + 1.5 * IQR)])
-    outliers = np.where((data < lower_whisker) | (data > upper_whisker))[0]
+    distances = abs(y - y_pred)
     
-    return outliers
+    Q3 = np.percentile(distances, 75)
+    
+    print(Q3,"\n")
+    
+    outliers = np.where(distances >= Q3)
+    
+    y = np.delete(y,outliers,axis=0)
+    
+    y_pred = np.delete(y_pred,outliers,axis=0)
+    
+    X_train = np.delete(X_train,outliers,axis=0)
+    
+    return y , y_pred, X_train
     
 
 def main():
@@ -42,13 +41,6 @@ def main():
     scaler_X = MinMaxScaler()
     X = scaler_X.fit_transform(data_x[:, :5])
     
-    outliers_y = outliers(y)
-
-    y = np.delete(y,outliers_y,axis=0)  
-        
-    X = np.delete(X,outliers_y,axis=0)
-    
-    Y = np.zeros((np.shape(X)[0],1))
     Y_rigid = np.zeros((np.shape(X)[0],1))
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None)
@@ -67,8 +59,14 @@ def main():
     model_linear.fit(X_train, y_train)
 
     # Predict the target values (optional)
-    Y = model_linear.predict(X_test)
+    Y = model_linear.predict(X_train)
     
+    y_train, Y, X_train = outliers(y_train, Y, X_train)
+    
+    model_linear.fit(X_train, y_train)
+    
+    Y = model_linear.predict(X_test) 
+       
     # Calculates R2 Coeficient
     r2 = model_linear.score(X_test, y_test)
     
@@ -110,12 +108,12 @@ def main():
      
     ############################# Prints  #############################
 
-    # print("R2 Linear Regression: ", r2)
-    # print("R2 Rigid Regression: ", r2_rigid)
-    # print("R2 Lasso Regression: ", r2_lasso)
+    print("R2 Linear Regression: ", r2)
+    print("R2 Rigid Regression: ", r2_rigid)
+    print("R2 Lasso Regression: ", r2_lasso)
     
-    # print(f"Best α_rigid = {model_rigid.alpha_}")
-    # print(f"Best α_lasso = {model_lasso.alpha_}")
+    print(f"Best α_rigid = {model_rigid.alpha_}")
+    print(f"Best α_lasso = {model_lasso.alpha_}")
     
     #############################  PLOTS  #############################
 
