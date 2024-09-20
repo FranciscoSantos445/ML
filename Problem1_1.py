@@ -110,12 +110,12 @@ def main():
      
     ############################# Prints  #############################
 
-    # print("R2 Linear Regression: ", r2)
-    # print("R2 Rigid Regression: ", r2_rigid)
-    # print("R2 Lasso Regression: ", r2_lasso)
+    print("R2 Linear Regression: ", r2)
+    print("R2 Rigid Regression: ", r2_rigid)
+    print("R2 Lasso Regression: ", r2_lasso)
     
-    # print(f"Best α_rigid = {model_rigid.alpha_}")
-    # print(f"Best α_lasso = {model_lasso.alpha_}")
+    print(f"Best α_rigid = {model_rigid.alpha_}")
+    print(f"Best α_lasso = {model_lasso.alpha_}")
     
     #############################  PLOTS  #############################
 

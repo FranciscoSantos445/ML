@@ -10,17 +10,23 @@ def outliers(y, y_pred, X_train):
     
     distances = abs(y - y_pred)
     
+    # Compute the first and third quartiles
+    Q1 = np.percentile(distances, 25)
     Q3 = np.percentile(distances, 75)
     
-    print(Q3,"\n")
+    # Compute the Interquartile Range (IQR)
+    IQR = Q3 - Q1
     
-    outliers = np.where(distances >= Q3)
+    # Define the outlier threshold (Q3 + 1.5 * IQR)
+    outlier_threshold = Q3 + 1.5 * IQR
     
-    y = np.delete(y,outliers,axis=0)
+    # Find the indices of the outliers
+    outliers = np.where(distances >= outlier_threshold)
     
-    y_pred = np.delete(y_pred,outliers,axis=0)
-    
-    X_train = np.delete(X_train,outliers,axis=0)
+    # Remove the outliers from y, y_pred, and X_train
+    y = np.delete(y, outliers, axis=0)
+    y_pred = np.delete(y_pred, outliers, axis=0)
+    X_train = np.delete(X_train, outliers, axis=0)
     
     return y , y_pred, X_train
     
