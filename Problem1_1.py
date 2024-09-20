@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV
+from sklearn.model_selection import train_test_split
 from datetime import datetime
 
 def outliers(data):
@@ -28,79 +28,87 @@ def outliers(data):
 def main():
     
 
-    data = np.load('X_train.npy')
-    y = np.load('y_train.npy')
+    data_x = np.load('X_train.npy')
+    data_y = np.load('y_train.npy')
 
     #############################  INITIALIZATIONS  ############################# 
     
     scaler = MinMaxScaler()
-    lambda_param = 10
-    y = y.reshape(-1, 1)
+    data_y = data_y.reshape(-1, 1)
      
     # Normalize the entire dataset (all 5 features)
     
-    normalized_data = scaler.fit_transform(data)
-    y_normalised = scaler.fit_transform(y)
+    normalized_data = scaler.fit_transform(data_x)
+    y = scaler.fit_transform(data_y)
     X = normalized_data[:, :5]  # Extracts the first 5 columns from data as a 2D array
     
-    outliers_y = outliers(y_normalised)
+    outliers_y = outliers(y)
 
-    y_normalised = np.delete(y_normalised,outliers_y,axis=0)  
+    y = np.delete(y,outliers_y,axis=0)  
         
     X = np.delete(X,outliers_y,axis=0)
     
     Y = np.zeros((np.shape(X)[0],1))
     Y_rigid = np.zeros((np.shape(X)[0],1))
-    
 
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None)
+    
+    alphas_gen1 = np.arange(0.01, 10, 0.01)
+    alphas_gen2 = np.arange(0.00001, 0.001, 0.00005)
+    
+    #############################  LINEAR REGRESSION  #############################
+    
+    y_train.ravel()
+    
+    # Initialize the linear regression model
+    model_linear = LinearRegression()
 
-    #############################  REGRESSIONS  ############################# 
+    # Fit the model on the normalized data
+    model_linear.fit(X_train, y_train)
 
+    # Predict the target values (optional)
+    Y = model_linear.predict(X_test)
+    
+    # Calculates R2 Coeficient
+    r2 = model_linear.score(X_test, y_test)
+    
+    #############################  Rigid REGRESSION  #############################
+    
+    # Initialize the rigid regression model
+    model_rigid = RidgeCV(alphas = alphas_gen1).fit(X_train, y_train)
 
-    # beta = linear_regression(X, y_normalised)
-    
-    beta = LinearRegression().fit(X, y_normalised)
-    
-    # beta_ridge = ridge_regression(X, y_normalised, lambda_param)
-    
-    
-    Y = Ridge(alpha=1.0)
-    Y.fit(X, y)
-    
+    # Fit the model on the normalized data
+    model_rigid.fit(X_train, y_train)
 
-    # for j in range(np.shape(X)[0]):
-    # # Calculate y_pred
-    #     Y[j] = np.matmul(beta, X[j, :])
-        
-    # print(np.shape(Y),"\n")
-        
-    # for j in range((np.shape(X)[0])):
-    # # Calculate y_pred
-    #     Y_rigid[j] = np.matmul(beta_ridge, X[j, :])
+    # Predict the target values (optional)
+    Y_rigid = model_rigid.predict(X_test)
 
+    # Calculates R2 Coeficient
+    r2_rigid = model_rigid.score(X_test, y_test)
     
+    #############################  Lasso REGRESSION  ############################
     
+    # Initialize the rigid regression model
+    model_lasso = LassoCV(alphas=alphas_gen2).fit(X_train, y_train)
+    
+    # Fit the model on the normalized data
+    model_lasso.fit(X_train, y_train)
 
-    # r2 = Coefficient_of_Determination(y_normalised,Y)
-    
-    reg.score(X, Y)
-    
-    # r2_rigid = Coefficient_of_Determination(y_normalised,Y_rigid)
-    
-    reg.score(X, Y_rigid)
-    
-    
-    
+    # Predict the target values (optional)
+    Y_lasso = model_lasso.predict(X_test)
+
+    # Calculates R2 Coeficient
+    r2_lasso = model_lasso.score(X_test, y_test)
+       
     
     #############################  PLOTS  #############################
 
-
-
-    # Get the current date and time
-    current_time = datetime.now()
-
-    # Print the date and time
-    print("Current Date and Time: ", current_time.strftime("%Y-%m-%d %H:%M:%S"))
+    print("R2 Linear Regression: ", r2)
+    print("R2 Rigid Regression: ", r2_rigid)
+    print("R2 Lasso Regression: ", r2_lasso)
+    
+    print(f"Best α_rigid = {model_rigid.alpha_}")
+    print(f"Best α_lasso = {model_lasso.alpha_}")
     
     #plot the data
     
@@ -112,9 +120,10 @@ def main():
     # # plt.scatter(range(len(feature_4)), feature_4, color='orange', label='Feature 4')
     # # plt.scatter(range(len(feature_5)), feature_5, color='purple', label='Feature 5')
     
-    plt.scatter(range(len(y_normalised)), y_normalised, color='red', label='y')
-    plt.scatter(range(len(Y)), Y, color='blue', label='ypred')
-    plt.scatter(range(len(Y_rigid)), Y_rigid, color='green', label='yrigid', s = 10)
+    plt.scatter(range(len(y_test)),y_test, color='red', label='y')
+    plt.scatter(range(len(Y)), Y, color='blue', label='y_linear')
+    plt.scatter(range(len(Y_rigid)), Y_rigid, color='green', label='y_rigid')
+    plt.scatter(range(len(Y_lasso)), Y_lasso, color='purple', label='y_lasso')
 
     plt.title('Normalized Features')
     plt.xlabel('Index')
