@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
 from datetime import datetime
 
 def outliers(data):
@@ -25,13 +27,14 @@ def outliers(data):
 
 def main():
     
+
     data = np.load('X_train.npy')
     y = np.load('y_train.npy')
 
-    # Initializations 
+    #############################  INITIALIZATIONS  ############################# 
     
     scaler = MinMaxScaler()
-    lambda_param = 100
+    lambda_param = 10
     y = y.reshape(-1, 1)
      
     # Normalize the entire dataset (all 5 features)
@@ -49,31 +52,49 @@ def main():
     Y = np.zeros((np.shape(X)[0],1))
     Y_rigid = np.zeros((np.shape(X)[0],1))
     
-    beta = linear_regression(X, y_normalised)
-    
-    beta_ridge = ridge_regression(X, y_normalised, lambda_param)
-    
-    print(np.shape(X)[0],"\n")
-    print(np.shape(beta),"\n")
 
-    for j in range(np.shape(X)[0]):
-    # Calculate y_pred
-        Y[j] = np.matmul(beta, X[j, :])
-        
-    print(np.shape(Y),"\n")
-        
-    for j in range((np.shape(X)[0])):
-    # Calculate y_pred
-        Y_rigid[j] = np.matmul(beta_ridge, X[j, :])
-        
-    # Remove outliers from the data
 
-    r2 = Coefficient_of_Determination(y_normalised,Y)
+    #############################  REGRESSIONS  ############################# 
+
+
+    # beta = linear_regression(X, y_normalised)
     
-    r2_rigid = Coefficient_of_Determination(y_normalised,Y_rigid)
+    beta = LinearRegression().fit(X, y_normalised)
     
-    print("r2 :", r2)
-    print("r2_rigid :", r2_rigid)
+    # beta_ridge = ridge_regression(X, y_normalised, lambda_param)
+    
+    
+    Y = Ridge(alpha=1.0)
+    Y.fit(X, y)
+    
+
+    # for j in range(np.shape(X)[0]):
+    # # Calculate y_pred
+    #     Y[j] = np.matmul(beta, X[j, :])
+        
+    # print(np.shape(Y),"\n")
+        
+    # for j in range((np.shape(X)[0])):
+    # # Calculate y_pred
+    #     Y_rigid[j] = np.matmul(beta_ridge, X[j, :])
+
+    
+    
+
+    # r2 = Coefficient_of_Determination(y_normalised,Y)
+    
+    reg.score(X, Y)
+    
+    # r2_rigid = Coefficient_of_Determination(y_normalised,Y_rigid)
+    
+    reg.score(X, Y_rigid)
+    
+    
+    
+    
+    #############################  PLOTS  #############################
+
+
 
     # Get the current date and time
     current_time = datetime.now()
