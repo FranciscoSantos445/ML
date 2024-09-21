@@ -217,9 +217,9 @@ def main():
     plt.scatter(range(len(Y_lasso)), Y_lasso, color='purple', label='y_lasso')
     plt.scatter(range(len(Y_ransac)), Y_ransac, color='black', label='y_ransac')
 
-    plt.title('Normalized Features')
+    plt.title('Y validation vs Y predicted')
     plt.xlabel('Index')
-    plt.ylabel('Normalized Value')
+    plt.ylabel('Y Values')
 
     plt.legend()
     plt.grid(True)
