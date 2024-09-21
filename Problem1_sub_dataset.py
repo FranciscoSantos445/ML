@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV
+from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV, RANSACRegressor
 from sklearn.model_selection import train_test_split
 from datetime import datetime
 
@@ -130,7 +130,8 @@ def main():
             best_X_train, best_y_train = X_train, y_train
 
     # Split the dataset
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None, shuffle=True)     
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None, shuffle=True) 
+        
     
     #############################  linear REGRESSION  #############################
 
@@ -138,7 +139,13 @@ def main():
     
     # Calculates R2 Coeficient
     r2 = model_linear.score(X_test, y_test)
-
+    
+    #############################  RANSAC REGRESSION  ############################
+    
+    ransac = RANSACRegressor(random_state=0).fit(X_train, y_train)
+    Y_ransac = ransac.predict(X_test)
+    r2_ransac = ransac.score(X_test, y_test)
+    
     #############################  Rigid REGRESSION  #############################
     
     # Initialize the rigid regression model
@@ -187,6 +194,7 @@ def main():
     ############################# Prints  #############################
 
     print("R2 Linear Regression: ", r2)
+    print("R2 ransac Regression: ", r2_ransac)
     print("R2 Rigid Regression: ", r2_rigid)
     print("R2 Lasso Regression: ", r2_lasso)
     
@@ -207,6 +215,7 @@ def main():
     plt.scatter(range(len(Y)), Y, color='blue', label='y_linear')
     plt.scatter(range(len(Y_rigid)), Y_rigid, color='green', label='y_rigid')
     plt.scatter(range(len(Y_lasso)), Y_lasso, color='purple', label='y_lasso')
+    plt.scatter(range(len(Y_ransac)), Y_ransac, color='black', label='y_ransac')
 
     plt.title('Normalized Features')
     plt.xlabel('Index')
