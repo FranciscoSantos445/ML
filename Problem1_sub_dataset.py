@@ -25,13 +25,54 @@ def outliers(data):
     
     return outliers
     
+def best_partition(X, y):
+    
+    r_Array = np.zeros(50)
+    r_mean_array = np.zeros(50)
+    partition_array = np.zeros(50)
+    
+    for index in range(50):
+
+        for index2 in range(50):
+            # Split the dataset
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= (0.05 + (index-1)*0.01633), random_state=None, shuffle=True)
+            
+            #############################  LINEAR REGRESSION  #############################
+            
+            partition = 0.1 + (index-1)*0.01633
+            
+            y_train.ravel()
+            
+            # Initialize the linear regression model
+            model_linear = LinearRegression()
+
+            # Fit the model on the data
+            model_linear.fit(X_train, y_train)
+
+            # Predict the target values (optional)
+            Y = model_linear.predict(X_test)
+            
+            # Calculates R2 Coeficient
+            r2 = model_linear.score(X_test, y_test)
+            
+            r_Array[index2] = r2
+        
+        partition_array[index] = partition = 0.1 + (index-1)*0.01633
+        
+        r_mean_array[index] = np.mean(r_Array)
+    
+    best_partition = partition_array[np.argmax(r_mean_array)]
+        
+    print("Best partition: ", best_partition)
+    
+    return best_partition
 
 def main():
     
 
     data_x = np.load('X_train.npy')
     data_y = np.load('y_train.npy')
-    data_test_x = np.load('x_test.npy')
+    data_x_test = np.load('x_test.npy')
 
     #############################  INITIALIZATIONS  ############################# 
     
@@ -43,6 +84,7 @@ def main():
     # Normalize the entire dataset (all 5 features)
     scaler_X = MinMaxScaler()
     X = scaler_X.fit_transform(data_x[:, :5])
+    X_test_file = scaler_X.fit_transform(data_x_test[:, :5])
     
     outliers_y = outliers(y)
 
@@ -56,10 +98,14 @@ def main():
     alphas_gen1 = np.arange(0.01, 10, 0.01)
     alphas_gen2 = np.arange(0.00001, 0.001, 0.00005)
     
+    partiotion = best_partition(X, y)
+    
+    ######################## train multiple times to get the best model ###################3
+    
     for index in range(50):
 
         # Split the dataset
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None, shuffle=True)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = partiotion, random_state=None)
         
         #############################  LINEAR REGRESSION  #############################
         
@@ -84,7 +130,7 @@ def main():
             best_X_train, best_y_train = X_train, y_train
 
     # Split the dataset
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None)     
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None, shuffle=True)     
     
     #############################  linear REGRESSION  #############################
 
@@ -112,7 +158,7 @@ def main():
     # Initialize the rigid regression model
     model_lasso = LassoCV(alphas=alphas_gen2).fit(best_X_train, best_y_train)
     
-    # Fit the model on the normalized data             é preciso?
+    # Fit the model on the normalized data
     model_lasso.fit(best_X_train, best_y_train)
 
     # Predict
@@ -123,7 +169,11 @@ def main():
     
     ################################## X_test.npy ###########################
     
-    # Y_lasso = model_lasso.predict(X_test)
+    Y_file = best_model_linear.predict(X_test_file)
+    
+    Y_rigid_file = model_rigid.predict(X_test_file)
+    
+    Y_lasso_file = model_lasso.predict(X_test_file)
     
     
     #############################  Denormalization ##########################
@@ -151,43 +201,56 @@ def main():
     # # plt.scatter(range(len(feature_4)), feature_4, color='orange', label='Feature 4')
     # # plt.scatter(range(len(feature_5)), feature_5, color='purple', label='Feature 5')
     
-    # plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(10, 6))
     
-    # plt.scatter(range(len(y_test)),y_test, color='red', label='y')
-    # plt.scatter(range(len(Y)), Y, color='blue', label='y_linear')
-    # plt.scatter(range(len(Y_rigid)), Y_rigid, color='green', label='y_rigid')
-    # plt.scatter(range(len(Y_lasso)), Y_lasso, color='purple', label='y_lasso')
+    plt.scatter(range(len(y_test)),y_test, color='red', label='y')
+    plt.scatter(range(len(Y)), Y, color='blue', label='y_linear')
+    plt.scatter(range(len(Y_rigid)), Y_rigid, color='green', label='y_rigid')
+    plt.scatter(range(len(Y_lasso)), Y_lasso, color='purple', label='y_lasso')
 
-    # plt.title('Normalized Features')
-    # plt.xlabel('Index')
-    # plt.ylabel('Normalized Value')
+    plt.title('Normalized Features')
+    plt.xlabel('Index')
+    plt.ylabel('Normalized Value')
 
-    # plt.legend()
-    # plt.grid(True)
+    plt.legend()
+    plt.grid(True)
     
-    # plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(10, 6))
     
-    # plt.scatter(Y, y_test, color='blue', label='Predictions vs Actual')
+    plt.scatter(Y, y_test, color='blue', label='Predictions vs Actual')
     
-    # plt.title('Y validation vs Y predicted')
-    # plt.xlabel('Y predicted')
-    # plt.ylabel('Y validation')
+    plt.title('Y validation vs Y predicted')
+    plt.xlabel('Y predicted')
+    plt.ylabel('Y validation')
 
-    # plt.legend()
-    # plt.grid(True)
+    plt.legend()
+    plt.grid(True)
     
-    # plt.figure(figsize=(10, 6))
+    ########################## plot do test set ##########################
     
-    # plt.scatter(Y, y_test, color='blue', label='Predictions vs Actual')
+    plt.figure(figsize=(10, 6))
     
-    # plt.title('Y validation vs Y predicted')
-    # plt.xlabel('Y predicted')
-    # plt.ylabel('Y validation')
+    if r2 > r2_rigid or r2 > r2_lasso:
+        Y_file = scaler_y.inverse_transform(Y_file.reshape(-1, 1))
+        plt.scatter(range(len(Y_file)),Y_file, color='blue', label='y_linear')
+        
+    elif r2_rigid > r2_lasso or r2_rigid > r2_lasso:
+        Y_rigid_file = scaler_y.inverse_transform(Y_rigid_file.reshape(-1, 1))
+        plt.scatter(range(len(Y_rigid_file)),Y_rigid_file, color='green', label='y_rigid')
+        
+    elif r2_lasso > r2_rigid or r2_lasso > r2:
+        Y_lasso_file = scaler_y.inverse_transform(Y_lasso_file.reshape(-1, 1))  
+        plt.scatter(range(len(Y_lasso_file)),Y_lasso_file, color='purple', label='y_lasso')
+                
+    plt.title('Y test models ')
+    plt.xlabel('Indexes')
+    plt.ylabel('Y values')
 
-    # plt.legend()
-    # plt.grid(True)
+    plt.legend()
+    plt.grid(True)
     
-    # plt.show()
+    plt.show()
 
 if __name__ == "__main__":
+    
     main()

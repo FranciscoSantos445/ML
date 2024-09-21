@@ -25,6 +25,47 @@ def outliers(data):
     
     return outliers
     
+def best_partition(X, y):
+    
+    r_Array = np.zeros(50)
+    r_mean_array = np.zeros(50)
+    partition_array = np.zeros(50)
+    
+    for index in range(50):
+
+        for index2 in range(50):
+            # Split the dataset
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= (0.05 + (index-1)*0.01633), random_state=None, shuffle=True)
+            
+            #############################  LINEAR REGRESSION  #############################
+            
+            partition = 0.1 + (index-1)*0.01633
+            
+            y_train.ravel()
+            
+            # Initialize the linear regression model
+            model_linear = LinearRegression()
+
+            # Fit the model on the data
+            model_linear.fit(X_train, y_train)
+
+            # Predict the target values (optional)
+            Y = model_linear.predict(X_test)
+            
+            # Calculates R2 Coeficient
+            r2 = model_linear.score(X_test, y_test)
+            
+            r_Array[index2] = r2
+        
+        partition_array[index] = partition = 0.1 + (index-1)*0.01633
+        
+        r_mean_array[index] = np.mean(r_Array)
+    
+    best_partition = partition_array[np.argmax(r_mean_array)]
+        
+    print("Best partition: ", best_partition)
+    
+    return best_partition
 
 def main():
     
