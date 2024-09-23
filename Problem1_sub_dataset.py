@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV, RANSACRegressor
+from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV, RANSACRegressor, ElasticNetCV
 from sklearn.model_selection import train_test_split
 from datetime import datetime
 
@@ -27,9 +27,9 @@ def outliers(data):
     
 def best_partition(X, y):
     
-    r_Array = np.zeros(50)
-    r_mean_array = np.zeros(50)
-    partition_array = np.zeros(50)
+    r_Array = np.zeros(46)
+    r_mean_array = np.zeros(46)
+    partition_array = np.zeros(46)
     
     for index in range(46):
 
@@ -94,7 +94,8 @@ def main():
     
     Y = np.zeros((np.shape(X)[0],1))
     Y_rigid = np.zeros((np.shape(X)[0],1))
-    
+    alphas = np.zeros(3)
+    estimated_coef = np.zeros((5, 3)) 
     alphas_gen1 = np.arange(0.01, 10, 0.01)
     alphas_gen2 = np.arange(0.00001, 0.001, 0.00005)
     
@@ -157,9 +158,6 @@ def main():
     # Initialize the rigid regression model
     model_rigid = RidgeCV(alphas = alphas_gen1).fit(best_X_train, best_y_train)
 
-    # Fit the model on the normalized data
-    model_rigid.fit(best_X_train, best_y_train)
-
     # Predict 
     Y_rigid = model_rigid.predict(X_test)
 
@@ -170,9 +168,6 @@ def main():
     
     # Initialize the rigid regression model
     model_lasso = LassoCV(alphas=alphas_gen2).fit(best_X_train, best_y_train)
-    
-    # Fit the model on the normalized data
-    model_lasso.fit(best_X_train, best_y_train)
 
     # Predict
     Y_lasso = model_lasso.predict(X_test)
@@ -180,6 +175,17 @@ def main():
     # Calculates R2 Coeficient
     r2_lasso = model_lasso.score(X_test, y_test)
     
+    #############################  ElasticNet REGRESSION  ############################
+
+    model_elastic = ElasticNetCV(cv=5, random_state=0)
+
+    model_elastic.fit(best_X_train,best_y_train)
+
+    Y_elastic = model_elastic.predict(X_test)
+
+    r2_elastic = model_elastic.score(X_test,y_test)
+
+
     ################################## X_test.npy ###########################
     
     Y_file = best_model_linear.predict(X_test_file)
@@ -197,18 +203,23 @@ def main():
     Y_ransac = scaler_y.inverse_transform(Y_ransac.reshape(-1, 1))
     Y_lasso = scaler_y.inverse_transform(Y_lasso.reshape(-1, 1))
     Y_rigid = scaler_y.inverse_transform(Y_rigid.reshape(-1, 1))
+    Y_elastic = scaler_y.inverse_transform(Y_elastic.reshape(-1, 1))
     y_test = scaler_y.inverse_transform(y_test.reshape(-1, 1))
      
      
     ############################# Prints  #############################
 
     print("R2 Linear Regression: ", r2)
-    print("R2 ransac Regression: ", r2_ransac)
+    print("R2 Ransac Regression: ", r2_ransac)
     print("R2 Rigid Regression: ", r2_rigid)
     print("R2 Lasso Regression: ", r2_lasso)
+    print("R2 Elastic Regression: ", r2_elastic)
     
     print(f"Best α_rigid = {model_rigid.alpha_}")
     print(f"Best α_lasso = {model_lasso.alpha_}")
+
+    # print("alpah\n", model_elastic.alpha_)
+    # print("Intercept ", model_elastic.intercept_)
     
     #############################  PLOTS  #############################
     
@@ -219,6 +230,7 @@ def main():
     plt.scatter(range(len(Y_rigid)), Y_rigid, color='green', label='y_rigid')
     plt.scatter(range(len(Y_lasso)), Y_lasso, color='purple', label='y_lasso')
     plt.scatter(range(len(Y_ransac)), Y_ransac, color='black', label='y_ransac')
+    plt.scatter(range(len(Y_elastic)), Y_elastic, color='yellow', label='y_elastic')
 
     plt.title('Y validation vs Y predicted')
     plt.xlabel('Index')
@@ -247,6 +259,7 @@ def main():
 
     plt.legend()
     plt.grid(True)
+    plt.show()
     
     ########################## plot do test set ##########################
     
@@ -282,19 +295,19 @@ def main():
 
     ########################## plot do histograma ##########################
 
-    plt.figure(figsize=(10, 6))
-    # Create a histogram
-    plt.hist(r2_Array, bins=100, edgecolor='black')  # You can adjust 'bins' for more or fewer bars
+    # plt.figure(figsize=(10, 6))
+    # # Create a histogram
+    # plt.hist(r2_Array, bins=100, edgecolor='black')  # You can adjust 'bins' for more or fewer bars
 
-    # Add labels and title
-    plt.xlabel('R2')
-    plt.ylabel('Frequency')
-    plt.title('R2 along various tests')
+    # # Add labels and title
+    # plt.xlabel('R2')
+    # plt.ylabel('Frequency')
+    # plt.title('R2 along various tests')
 
-    # Show the plot
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+    # # Show the plot
+    # plt.legend()
+    # plt.grid(True)
+    # plt.show()
 
 if __name__ == "__main__":
     
