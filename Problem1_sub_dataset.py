@@ -143,7 +143,9 @@ def main():
     #############################  RANSAC REGRESSION  ############################
     
     ransac = RANSACRegressor(random_state=0).fit(best_X_train,best_y_train )
+    
     Y_ransac = ransac.predict(X_test)
+    
     r2_ransac = ransac.score(X_test, y_test)
     
     #############################  Rigid REGRESSION  #############################
@@ -229,16 +231,16 @@ def main():
     
     plt.figure(figsize=(10, 6))
     
-    if r2 > r2_rigid or r2 > r2_lasso or r2 > r2_ransac:
+    if r2 > r2_rigid and r2 > r2_lasso and r2 > r2_ransac:
         plt.scatter(Y,y_test, color='blue', label='y_linear V y_test')
     
-    elif r2_ransac > r2_rigid or r2_ransac > r2 or r2_ransac > r2_lasso:
+    elif r2_ransac > r2_rigid and r2_ransac > r2 and r2_ransac > r2_lasso:
         plt.scatter(Y_ransac,y_test, color='black', label='y_ransac V y_test')
     
-    elif r2_rigid > r2 or r2_rigid > r2_lasso or r2_rigid > r2_ransac:
+    elif r2_rigid > r2 and r2_rigid > r2_lasso and r2_rigid > r2_ransac:
         plt.scatter(Y_rigid,y_test, color='green', label='y_rigid V y_test')
         
-    elif r2_lasso > r2_rigid or r2_lasso > r2 or r2_lasso > r2_ransac:
+    elif r2_lasso > r2_rigid and r2_lasso > r2 and r2_lasso > r2_ransac:
             plt.scatter(Y_lasso,y_test, color='purple', label='y_lasso V y_test')
     
     plt.title('Y validation vs Y predicted')
@@ -252,20 +254,20 @@ def main():
     
     plt.figure(figsize=(10, 6))
     
-    if r2 > r2_rigid or r2 > r2_lasso or r2 > r2_ransac:
+    if r2 > r2_rigid and r2 > r2_lasso and r2 > r2_ransac:
         Y_file = scaler_y.inverse_transform(Y_file.reshape(-1, 1))
         plt.scatter(range(len(Y_file)),Y_file, color='blue', label='y_linear')
         
-    elif r2_ransac > r2_rigid or r2_ransac > r2 or r2_ransac > r2_lasso:
+    elif r2_ransac > r2_rigid and r2_ransac > r2 and r2_ransac > r2_lasso:
         Y_ransac_file = scaler_y.inverse_transform(Y_ransac_file.reshape(-1, 1))
         plt.scatter(range(len(Y_ransac_file)),Y_ransac_file, color='black', label='y_ransac V y_test')
 
         
-    elif r2_rigid > r2 or r2_rigid > r2_lasso or r2_rigid > r2_ransac:
+    elif r2_rigid > r2 and r2_rigid > r2_lasso and r2_rigid > r2_ransac:
         Y_rigid_file = scaler_y.inverse_transform(Y_rigid_file.reshape(-1, 1))
         plt.scatter(range(len(Y_rigid_file)),Y_rigid_file, color='green', label='y_rigid')
         
-    elif r2_lasso > r2_rigid or r2_lasso > r2 or r2_lasso > r2_ransac:
+    elif r2_lasso > r2_rigid and r2_lasso > r2 and r2_lasso > r2_ransac:
         Y_lasso_file = scaler_y.inverse_transform(Y_lasso_file.reshape(-1, 1))  
         plt.scatter(range(len(Y_lasso_file)),Y_lasso_file, color='purple', label='y_lasso')
         
