@@ -31,15 +31,15 @@ def best_partition(X, y):
     r_mean_array = np.zeros(50)
     partition_array = np.zeros(50)
     
-    for index in range(50):
+    for index in range(46):
 
-        for index2 in range(50):
+        for index2 in range(46):
             # Split the dataset
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= (0.05 + (index-1)*0.01633), random_state=None, shuffle=True)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= (0.05 + (index-1)*0.01), random_state=None, shuffle=True)
             
             #############################  LINEAR REGRESSION  #############################
             
-            partition = 0.1 + (index-1)*0.01633
+            partition = 0.05 + (index-1)*0.01
             
             y_train.ravel()
             
@@ -57,7 +57,7 @@ def best_partition(X, y):
             
             r_Array[index2] = r2
         
-        partition_array[index] = partition = 0.1 + (index-1)*0.01633
+        partition_array[index] = partition 
         
         r_mean_array[index] = np.mean(r_Array)
     
@@ -80,7 +80,7 @@ def main():
     data_y = data_y.reshape(-1, 1)  
     y = scaler_y.fit_transform(data_y)
     best_r2 = 0
-    
+    r2_Array = np.zeros(200)
     # Normalize the entire dataset (all 5 features)
     scaler_X = MinMaxScaler()
     X = scaler_X.fit_transform(data_x[:, :5])
@@ -102,7 +102,7 @@ def main():
     
     ######################## train multiple times to get the best model ###################3
     
-    for index in range(50):
+    for index in range(200):
 
         # Split the dataset
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = partiotion, random_state=None)
@@ -123,7 +123,11 @@ def main():
         # Calculates R2 Coeficient
         r2 = model_linear.score(X_test, y_test)
 
-        # Store the best Linear model if the R2 is better than the previous best
+        r2 = round(r2, 2)
+
+        if r2 > 0:
+            r2_Array[index] = r2 
+        
         if r2 > best_r2:
             best_r2 = r2
             best_model_linear = model_linear
@@ -207,12 +211,6 @@ def main():
     print(f"Best α_lasso = {model_lasso.alpha_}")
     
     #############################  PLOTS  #############################
-
-    # # plt.scatter(range(len(feature_1)), feature_1, color='red', label='Feature 1')
-    # # plt.scatter(range(len(feature_2)), feature_2, color='blue', label='Feature 2')
-    # # plt.scatter(range(len(feature_3)), feature_3, color='green', label='Feature 3')
-    # # plt.scatter(range(len(feature_4)), feature_4, color='orange', label='Feature 4')
-    # # plt.scatter(range(len(feature_5)), feature_5, color='purple', label='Feature 5')
     
     plt.figure(figsize=(10, 6))
     
@@ -252,34 +250,50 @@ def main():
     
     ########################## plot do test set ##########################
     
-    plt.figure(figsize=(10, 6))
+    # plt.figure(figsize=(10, 6))
     
-    if r2 > r2_rigid and r2 > r2_lasso and r2 > r2_ransac:
-        Y_file = scaler_y.inverse_transform(Y_file.reshape(-1, 1))
-        plt.scatter(range(len(Y_file)),Y_file, color='blue', label='y_linear')
+    # if r2 > r2_rigid and r2 > r2_lasso and r2 > r2_ransac:
+    #     Y_file = scaler_y.inverse_transform(Y_file.reshape(-1, 1))
+    #     plt.scatter(range(len(Y_file)),Y_file, color='blue', label='y_linear')
         
-    elif r2_ransac > r2_rigid and r2_ransac > r2 and r2_ransac > r2_lasso:
-        Y_ransac_file = scaler_y.inverse_transform(Y_ransac_file.reshape(-1, 1))
-        plt.scatter(range(len(Y_ransac_file)),Y_ransac_file, color='black', label='y_ransac V y_test')
+    # elif r2_ransac > r2_rigid and r2_ransac > r2 and r2_ransac > r2_lasso:
+    #     Y_ransac_file = scaler_y.inverse_transform(Y_ransac_file.reshape(-1, 1))
+    #     plt.scatter(range(len(Y_ransac_file)),Y_ransac_file, color='black', label='y_ransac V y_test')
 
         
-    elif r2_rigid > r2 and r2_rigid > r2_lasso and r2_rigid > r2_ransac:
-        Y_rigid_file = scaler_y.inverse_transform(Y_rigid_file.reshape(-1, 1))
-        plt.scatter(range(len(Y_rigid_file)),Y_rigid_file, color='green', label='y_rigid')
+    # elif r2_rigid > r2 and r2_rigid > r2_lasso and r2_rigid > r2_ransac:
+    #     Y_rigid_file = scaler_y.inverse_transform(Y_rigid_file.reshape(-1, 1))
+    #     plt.scatter(range(len(Y_rigid_file)),Y_rigid_file, color='green', label='y_rigid')
         
-    elif r2_lasso > r2_rigid and r2_lasso > r2 and r2_lasso > r2_ransac:
-        Y_lasso_file = scaler_y.inverse_transform(Y_lasso_file.reshape(-1, 1))  
-        plt.scatter(range(len(Y_lasso_file)),Y_lasso_file, color='purple', label='y_lasso')
+    # elif r2_lasso > r2_rigid and r2_lasso > r2 and r2_lasso > r2_ransac:
+    #     Y_lasso_file = scaler_y.inverse_transform(Y_lasso_file.reshape(-1, 1))  
+    #     plt.scatter(range(len(Y_lasso_file)),Y_lasso_file, color='purple', label='y_lasso')
         
     
                 
-    plt.title('Y test models ')
-    plt.xlabel('Indexes')
-    plt.ylabel('Y values')
+    # plt.title('Y test models ')
+    # plt.xlabel('Indexes')
+    # plt.ylabel('Y values')
 
+    # plt.legend()
+    # plt.grid(True)
+    
+    # plt.show()
+
+    ########################## plot do histograma ##########################
+
+    plt.figure(figsize=(10, 6))
+    # Create a histogram
+    plt.hist(r2_Array, bins=100, edgecolor='black')  # You can adjust 'bins' for more or fewer bars
+
+    # Add labels and title
+    plt.xlabel('R2')
+    plt.ylabel('Frequency')
+    plt.title('R2 along various tests')
+
+    # Show the plot
     plt.legend()
     plt.grid(True)
-    
     plt.show()
 
 if __name__ == "__main__":
