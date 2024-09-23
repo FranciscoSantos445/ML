@@ -142,7 +142,7 @@ def main():
     
     #############################  RANSAC REGRESSION  ############################
     
-    ransac = RANSACRegressor(random_state=0).fit(X_train, y_train)
+    ransac = RANSACRegressor(random_state=0).fit(best_X_train,best_y_train )
     Y_ransac = ransac.predict(X_test)
     r2_ransac = ransac.score(X_test, y_test)
     
@@ -178,6 +178,8 @@ def main():
     
     Y_file = best_model_linear.predict(X_test_file)
     
+    Y_ransac_file = ransac.predict(X_test_file)
+    
     Y_rigid_file = model_rigid.predict(X_test_file)
     
     Y_lasso_file = model_lasso.predict(X_test_file)
@@ -186,6 +188,7 @@ def main():
     #############################  Denormalization ##########################
         
     Y = scaler_y.inverse_transform(Y.reshape(-1, 1))
+    Y_ransac = scaler_y.inverse_transform(Y_ransac.reshape(-1, 1))
     Y_lasso = scaler_y.inverse_transform(Y_lasso.reshape(-1, 1))
     Y_rigid = scaler_y.inverse_transform(Y_rigid.reshape(-1, 1))
     y_test = scaler_y.inverse_transform(y_test.reshape(-1, 1))
@@ -226,7 +229,17 @@ def main():
     
     plt.figure(figsize=(10, 6))
     
-    plt.scatter(Y, y_test, color='blue', label='Predictions vs Actual')
+    if r2 > r2_rigid or r2 > r2_lasso or r2 > r2_ransac:
+        plt.scatter(Y,y_test, color='blue', label='y_linear V y_test')
+    
+    elif r2_ransac > r2_rigid or r2_ransac > r2 or r2_ransac > r2_lasso:
+        plt.scatter(Y_ransac,y_test, color='black', label='y_ransac V y_test')
+    
+    elif r2_rigid > r2 or r2_rigid > r2_lasso or r2_rigid > r2_ransac:
+        plt.scatter(Y_rigid,y_test, color='green', label='y_rigid V y_test')
+        
+    elif r2_lasso > r2_rigid or r2_lasso > r2 or r2_lasso > r2_ransac:
+            plt.scatter(Y_lasso,y_test, color='purple', label='y_lasso V y_test')
     
     plt.title('Y validation vs Y predicted')
     plt.xlabel('Y predicted')
@@ -239,17 +252,24 @@ def main():
     
     plt.figure(figsize=(10, 6))
     
-    if r2 > r2_rigid or r2 > r2_lasso:
+    if r2 > r2_rigid or r2 > r2_lasso or r2 > r2_ransac:
         Y_file = scaler_y.inverse_transform(Y_file.reshape(-1, 1))
         plt.scatter(range(len(Y_file)),Y_file, color='blue', label='y_linear')
         
-    elif r2_rigid > r2_lasso or r2_rigid > r2_lasso:
+    elif r2_ransac > r2_rigid or r2_ransac > r2 or r2_ransac > r2_lasso:
+        Y_ransac_file = scaler_y.inverse_transform(Y_ransac_file.reshape(-1, 1))
+        plt.scatter(range(len(Y_ransac_file)),Y_ransac_file, color='black', label='y_ransac V y_test')
+
+        
+    elif r2_rigid > r2 or r2_rigid > r2_lasso or r2_rigid > r2_ransac:
         Y_rigid_file = scaler_y.inverse_transform(Y_rigid_file.reshape(-1, 1))
         plt.scatter(range(len(Y_rigid_file)),Y_rigid_file, color='green', label='y_rigid')
         
-    elif r2_lasso > r2_rigid or r2_lasso > r2:
+    elif r2_lasso > r2_rigid or r2_lasso > r2 or r2_lasso > r2_ransac:
         Y_lasso_file = scaler_y.inverse_transform(Y_lasso_file.reshape(-1, 1))  
         plt.scatter(range(len(Y_lasso_file)),Y_lasso_file, color='purple', label='y_lasso')
+        
+    
                 
     plt.title('Y test models ')
     plt.xlabel('Indexes')
