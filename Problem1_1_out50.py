@@ -5,26 +5,6 @@ from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV, RANSACRegre
 from sklearn.model_selection import train_test_split
 from datetime import datetime
 
-def outliers(data):
-    
-    # Compute quartiles
-    Q1 = np.percentile(data, 25)
-    # Q2 = np.median(data)  # or np.percentile(data, 50)
-    Q3 = np.percentile(data, 75)
-
-    # Compute interquartile range (IQR)
-    IQR = Q3 - Q1
-
-    # Compute whiskers
-    lower_whisker = np.min(data[data >= Q1 - 1.5 * IQR])
-    upper_whisker = np.max(data[data <= Q3 + 1.5 * IQR])
-
-    # Find outliers
-    #outliers = np.where(data[(data < Q1 - 1.5 * IQR) | (data > Q3 + 1.5 * IQR)])
-    outliers = np.where((data < lower_whisker) | (data > upper_whisker))[0]
-    
-    return outliers
-
 def sse(y_true, y_pred):
     
     return np.sum((y_true - y_pred) ** 2)
@@ -45,7 +25,6 @@ def best_partition(X, y):
     partition_array = np.zeros(46)
     
     for index in range(46):
-
         for index2 in range(46):
             # Split the dataset
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= (0.05 + (index-1)*0.01), random_state=None, shuffle=True)

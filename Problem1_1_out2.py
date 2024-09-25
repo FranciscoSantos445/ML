@@ -31,6 +31,15 @@ def outliers(y, y_pred, X_train):
     return y , y_pred, X_train
     
 
+def take_out_shit_value(y_true,y_pred):
+    dif_array = np.zeros(len(y_true))
+    for i in range(len(y_true)):
+        dif_array[i] = abs(y_true[i]-y_pred[i])
+
+    index_max_value = np.argmax(dif_array)
+
+    return index_max_value
+
 def main():
     
 
@@ -49,10 +58,29 @@ def main():
     
     Y_rigid = np.zeros((np.shape(X)[0],1))
 
+    for i in range(50):
+    
+        # Initialize the linear regression model
+        model_linear = LinearRegression()
+
+        # Fit the model on the normalized data
+        model_linear.fit(X, y)
+
+        # Predict the target values (optional)
+        Y = model_linear.predict(X)
+
+        shit_index = take_out_shit_value(y,Y)
+
+        y = np.delete(y, shit_index, axis=0)
+        X = np.delete(X, shit_index, axis=0)
+
+
+
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=None)
     
     alphas_gen1 = np.arange(0.01, 10, 0.01)
     alphas_gen2 = np.arange(0.00001, 0.001, 0.00005)
+    
     
     #############################  LINEAR REGRESSION  #############################
     
@@ -60,14 +88,6 @@ def main():
     
     # Initialize the linear regression model
     model_linear = LinearRegression()
-
-    # Fit the model on the normalized data
-    model_linear.fit(X_train, y_train)
-
-    # Predict the target values (optional)
-    Y = model_linear.predict(X_train)
-    
-    y_train, Y, X_train = outliers(y_train, Y, X_train)
     
     model_linear.fit(X_train, y_train)
     
