@@ -30,9 +30,16 @@ def sse(y_true, y_pred):
     return np.sum((y_true - y_pred) ** 2)
 
 def take_out_bad_value(y_true,y_pred):
+    
     dif_array = np.zeros(len(y_true))
+    
     for i in range(len(y_true)):
-        dif_array[i] = abs(y_true[i]-y_pred[i])
+        
+        y = y_true[i][0]
+    
+        y_calc_pred = y_pred[i][0]
+        
+        dif_array[i] = abs(y - y_calc_pred)
 
     index_max_value = np.argmax(dif_array)
 

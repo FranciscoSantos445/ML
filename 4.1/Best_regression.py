@@ -90,9 +90,12 @@ def main():
     r2_rigid = np.zeros(400)
     r2_ransac = np.zeros(400)
     r2_linear = np.zeros(400)
+    
     estimated_coef = np.zeros((5, 3)) 
+    
     alphas_gen1 = np.arange(0.01, 10, 0.01)
     alphas_gen2 = np.arange(0.00001, 0.001, 0.00005)
+    k = 17
 
     points_linear = 0
     points_ransac = 0

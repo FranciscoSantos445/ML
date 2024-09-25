@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV
 from sklearn.model_selection import train_test_split
-from datetime import datetime
 
 
 def outliers(y, y_pred, X_train):
@@ -32,9 +31,17 @@ def outliers(y, y_pred, X_train):
     
 
 def take_out_shit_value(y_true,y_pred):
+    
     dif_array = np.zeros(len(y_true))
+    
     for i in range(len(y_true)):
-        dif_array[i] = abs(y_true[i]-y_pred[i])
+        
+        y = y_true[i][0]
+    
+        y_calc_pred = y_pred[i][0]
+        
+        dif_array[i] = abs(y - y_calc_pred)
+
 
     index_max_value = np.argmax(dif_array)
 
