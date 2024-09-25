@@ -20,7 +20,6 @@ def outliers(data):
     upper_whisker = np.max(data[data <= Q3 + 1.5 * IQR])
 
     # Find outliers
-    #outliers = np.where(data[(data < Q1 - 1.5 * IQR) | (data > Q3 + 1.5 * IQR)])
     outliers = np.where((data < lower_whisker) | (data > upper_whisker))[0]
     
     return outliers
