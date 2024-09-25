@@ -9,7 +9,7 @@ from datetime import datetime
 def take_out_bad_value(y_true,y_pred):
     dif_array = np.zeros(len(y_true))
     for i in range(len(y_true)):
-        dif_array[i] = abs(y_true[i]-y_pred[i])
+        dif_array[i] = abs(y_true[i].item() - y_pred[i].item())
 
     index_max_value = np.argmax(dif_array)
 
