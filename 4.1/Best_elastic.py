@@ -23,7 +23,6 @@ def take_out_shit_value(y_true,y_pred):
 
 def main():
     
-
     data_x = np.load('X_train.npy')
     data_y = np.load('y_train.npy')
 
@@ -61,23 +60,24 @@ def main():
 
     #############################  ElasticNet REGRESSION  ############################
     
-    alphas_e = np.arange(0.0001, 1, 0.0001)
+    model_elastic = ElasticNetCV(
+        l1_ratio=[0.1, 0.2, 0.3, 0.4,0.5,0.6,0.7,0.8, 0.9], # L1 to L2 mixing (Lasso to Ridge)
+        alphas=None,               # Use default alpha values if not provided
+        cv=5,                      # 5-fold cross-validation
+        max_iter=10000,            # Max iterations (increase if needed)
+        tol=1e-4,                  # Convergence tolerance
+    )
     
-    l1_ratios=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-    
-    model_elastic = ElasticNetCV(l1_ratio = l1_ratios, alphas = alphas_e, cv = k).fit(X_train, y_train.ravel())
+    model_elastic.fit(X_train, y_train.ravel())
 
     Y_elastic = model_elastic.predict(X_test)
 
     r2_elastic = model_elastic.score(X_test,y_test)
-       
     
     #############################  Denormalization ##########################
     
-    Y = scaler_y.inverse_transform(Y.reshape(-1, 1))
-    Y_lasso = scaler_y.inverse_transform(Y_lasso.reshape(-1, 1))
-    Y_rigid = scaler_y.inverse_transform(Y_rigid.reshape(-1, 1))
     y_test = scaler_y.inverse_transform(y_test.reshape(-1, 1))
+    Y_elastic = scaler_y.inverse_transform(Y_elastic.reshape(-1, 1))
      
     ############################# Prints  #############################
 

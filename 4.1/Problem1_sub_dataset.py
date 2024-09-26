@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV, RANSACRegressor, ElasticNetCV
 from sklearn.model_selection import train_test_split
-from datetime import datetime
 
 def outliers(data):
     
@@ -130,14 +129,14 @@ def main():
     alphas_gen2 = np.arange(0.00001, 0.001, 0.00005)
     
     
-    partiotion = best_partition(X, y)
+    partition = best_partition(X, y)
     
     ######################## train multiple times to get the best model ###################3
     
     for index in range(200):
 
         # Split the dataset
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = partiotion, random_state=None)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = partition, random_state=None)
         
         #############################  LINEAR REGRESSION  #############################
         

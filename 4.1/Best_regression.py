@@ -93,9 +93,8 @@ def main():
     
     estimated_coef = np.zeros((5, 3)) 
     
-    alphas_gen1 = np.arange(0.01, 10, 0.01)
-    alphas_gen2 = np.arange(0.00001, 0.001, 0.00005)
-    k = 17
+    alphas_gen1 = np.arange(0.1, 100, 0.1)
+    alphas_gen2 = np.arange(0.00001, 0.0001, 0.0005)
 
     points_linear = 0
     points_ransac = 0
@@ -146,7 +145,13 @@ def main():
         
         #############################  ElasticNet REGRESSION  ############################
 
-        model_elastic = ElasticNetCV(cv=5, random_state=0).fit(X_train,y_train)
+        model_elastic = ElasticNetCV(
+            l1_ratio=[0.1, 0.2, 0.3, 0.4,0.5,0.6,0.7,0.8, 0.9], # L1 to L2 mixing (Lasso to Ridge)
+            alphas=None,               # Use default alpha values if not provided
+            cv=5,                      # 5-fold cross-validation
+            max_iter=10000,            # Max iterations (increase if needed)
+            tol=1e-4,                  # Convergence tolerance
+        ).fit(X_train, y_train.ravel())
 
         r2_elastic[index] = model_elastic.score(X_test,y_test)
 
@@ -237,6 +242,10 @@ def main():
 
     best_model = max(points, key=points.get)
     print(f"The model with the highest points is: {best_model}")
+
+    print("alpha rigid: ", model_rigid.alpha_)
+    print("alpha lasso: ", model_lasso.alpha_)
+    print("alpha elastic: ", model_elastic.alpha_)
 
     
 
