@@ -92,7 +92,7 @@ def main():
     plt.figure(figsize=(10, 6))
     
     plt.scatter(range(len(y_test)),y_test, color='red', label='y')
-    plt.scatter(range(len(Y_elastic)), Y_elastic, color='blue', label='y_linear')
+    plt.scatter(range(len(Y_elastic)), Y_elastic, color='blue', label='y_elastic')
 
     plt.title('Normalized Features')
     plt.xlabel('Index')

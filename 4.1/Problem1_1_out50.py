@@ -195,8 +195,14 @@ def main():
     
     #############################  ElasticNet REGRESSION  ############################
 
-    model_elastic = ElasticNetCV(cv=5, random_state=0)
-
+    model_elastic = ElasticNetCV(
+        l1_ratio=[0.1, 0.2, 0.3, 0.4,0.5,0.6,0.7,0.8, 0.9], # L1 to L2 mixing (Lasso to Ridge)
+        alphas=None,               # Use default alpha values if not provided
+        cv=5,                      # 5-fold cross-validation
+        max_iter=10000,            # Max iterations (increase if needed)
+        tol=1e-4,                  # Convergence tolerance
+    )
+     
     model_elastic.fit(best_X_train,best_y_train)
 
     Y_elastic = model_elastic.predict(X_test)
@@ -287,54 +293,6 @@ def main():
     plt.legend()
     plt.grid(True)
     plt.show()
-    
-    ########################## plot do test set ##########################
-    
-    # plt.figure(figsize=(10, 6))
-    
-    # if r2 > r2_rigid and r2 > r2_lasso and r2 > r2_ransac:
-    #     Y_file = scaler_y.inverse_transform(Y_file.reshape(-1, 1))
-    #     plt.scatter(range(len(Y_file)),Y_file, color='blue', label='y_linear')
-        
-    # elif r2_ransac > r2_rigid and r2_ransac > r2 and r2_ransac > r2_lasso:
-    #     Y_ransac_file = scaler_y.inverse_transform(Y_ransac_file.reshape(-1, 1))
-    #     plt.scatter(range(len(Y_ransac_file)),Y_ransac_file, color='black', label='y_ransac V y_test')
-
-        
-    # elif r2_rigid > r2 and r2_rigid > r2_lasso and r2_rigid > r2_ransac:
-    #     Y_rigid_file = scaler_y.inverse_transform(Y_rigid_file.reshape(-1, 1))
-    #     plt.scatter(range(len(Y_rigid_file)),Y_rigid_file, color='green', label='y_rigid')
-        
-    # elif r2_lasso > r2_rigid and r2_lasso > r2 and r2_lasso > r2_ransac:
-    #     Y_lasso_file = scaler_y.inverse_transform(Y_lasso_file.reshape(-1, 1))  
-    #     plt.scatter(range(len(Y_lasso_file)),Y_lasso_file, color='purple', label='y_lasso')
-        
-    
-                
-    # plt.title('Y test models ')
-    # plt.xlabel('Indexes')
-    # plt.ylabel('Y values')
-
-    # plt.legend()
-    # plt.grid(True)
-    
-    # plt.show()
-
-    ########################## plot do histograma ##########################
-
-    # plt.figure(figsize=(10, 6))
-    # # Create a histogram
-    # plt.hist(r2_Array, bins=100, edgecolor='black')  # You can adjust 'bins' for more or fewer bars
-
-    # # Add labels and title
-    # plt.xlabel('R2')
-    # plt.ylabel('Frequency')
-    # plt.title('R2 along various tests')
-
-    # # Show the plot
-    # plt.legend()
-    # plt.grid(True)
-    # plt.show()
 
 if __name__ == "__main__":
     
