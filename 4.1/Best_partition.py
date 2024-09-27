@@ -18,7 +18,7 @@ def take_out_bad_value(y_true,y_pred):
 def sse(y_true, y_pred):
     
     return np.sum((y_true - y_pred) ** 2)
-  
+
 
 def main():
     
@@ -65,7 +65,7 @@ def main():
     
     for index in range(46):
 
-        for index2 in range(10000):
+        for index2 in range(1000):
             # Split the dataset
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= (0.05 + (index-1)*0.01), random_state=None, shuffle=True)
             
@@ -85,13 +85,13 @@ def main():
             Y = model_linear.predict(X_test)
             
             # Calculates R2 Coeficient
-            r2 = model_linear.score(X_test, y_test)
+            r2 = sse(y_test, Y)
             
             r_Array[index2] = r2
         
-        partition_array[index] = partition 
-        
         r_mean_array[index] = np.mean(r_Array)
+
+        partition_array[index] = partition 
     
     best_partition = partition_array[np.argmax(r_mean_array)]
         
