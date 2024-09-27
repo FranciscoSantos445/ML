@@ -4,23 +4,6 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV, RANSACRegressor, ElasticNetCV
 from sklearn.model_selection import train_test_split
 
-def take_out_bad_value(y_true,y_pred):
-    
-    dif_array = np.zeros(len(y_true))
-    
-    for i in range(len(y_true)):
-        
-        y = y_true[i][0]
-    
-        y_calc_pred = y_pred[i][0]
-        
-        dif_array[i] = abs(y - y_calc_pred)
-
-    index_max_value = np.argmax(dif_array)
-
-    return index_max_value
-
-
 def main():
     
 
@@ -37,16 +20,17 @@ def main():
     scaler_X = MinMaxScaler()
     X = scaler_X.fit_transform(data_x[:, :5])
     
+    r2_elastic = np.zeros(50)
+    r2_lasso = np.zeros(50)
+    r2_rigid = np.zeros(50)
+    r2_ransac = np.zeros(50)
+    r2_linear = np.zeros(50)
     
-    r2_elastic = np.zeros(1000)
-    r2_lasso = np.zeros(1000)
-    r2_rigid = np.zeros(1000)
-    r2_linear = np.zeros(1000)
-    
-    r2_elastic_points = np.zeros(1000)
-    r2_lasso_points = np.zeros(1000)
-    r2_rigid_points = np.zeros(1000)
-    r2_linear_points = np.zeros(1000)
+    r2_elastic_points = np.zeros(50)
+    r2_lasso_points = np.zeros(50)
+    r2_rigid_points = np.zeros(50)
+    r2_ransac_points = np.zeros(50)
+    r2_linear_points = np.zeros(50)
     
     estimated_coef = np.zeros((5, 3)) 
     
@@ -54,37 +38,30 @@ def main():
     alphas_gen2 = np.arange(0.00001, 0.0001, 0.0005)
 
     points_linear = 0
+    points_ransac = 0
     points_rigid = 0
     points_lasso = 0
     points_elastic = 0
     
-    number_outliers = int(data_x.shape[0] * 0.25)
     
-    for i in range(number_outliers):
+    # Define the RANSAC estimator
+    ransac = RANSACRegressor(stop_n_inliers = int( np.shape(X)[0] * 0.75)).fit(X, y)
 
-        # Initialize the linear regression model
-        model_linear = LinearRegression()
+    # Get inliers and outliers from the training data
+    inlier_mask = ransac.inlier_mask_
 
-        # Fit the model on the normalized data
-        model_linear.fit(X, y)
-
-        # Predict the target values (optional)
-        Y = model_linear.predict(X)
-
-        bad_index = take_out_bad_value(y,Y)
-
-        data_y = np.delete(y, bad_index, axis=0)
-        data_x = np.delete(X, bad_index, axis=0)
-    
+    X = X[inlier_mask]
+    y = y[inlier_mask]
     
     ######################## train multiple times to get the best model ###################3
     
-    for index in range(1000):
+    for index in range(50):
 
         # Split the dataset
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state=None)
         
         y_train.ravel()
+        y_test.ravel()
 
         #############################  linear REGRESSION  #############################
 
@@ -94,6 +71,13 @@ def main():
         # Calculates R2 Coeficient
         r2_linear[index]  = model_linear.score(X_test, y_test)
         
+        #############################  RANSAC REGRESSION  ############################
+        
+        # Define the RANSAC estimator
+        ransac = RANSACRegressor(max_trials=10000, stop_n_inliers = np.shape(X_train)[0], residual_threshold = 1000).fit(X_train, y_train)
+
+        r2_ransac[index] = ransac.score(X_test, y_test)
+                
         #############################  Rigid REGRESSION  #############################
         
         # Initialize the rigid regression model
@@ -125,6 +109,7 @@ def main():
 
         r2_scores = {
             'linear': r2_linear[index],
+            'ransac': r2_ransac[index],
             'rigid': r2_rigid[index],
             'lasso': r2_lasso[index],
             'elastic': r2_elastic[index]
@@ -138,6 +123,8 @@ def main():
         # Award points (5 for highest, 4 for second, etc.)
         if sorted_models[0] == 'linear':
             points_linear += 5
+        elif sorted_models[0] == 'ransac':
+            points_ransac += 5
         elif sorted_models[0] == 'rigid':
             points_rigid += 5
         elif sorted_models[0] == 'lasso':
@@ -147,6 +134,8 @@ def main():
         
         if sorted_models[1] == 'linear':
             points_linear += 4
+        elif sorted_models[1] == 'ransac':
+            points_ransac += 4
         elif sorted_models[1] == 'rigid':
             points_rigid += 4
         elif sorted_models[1] == 'lasso':
@@ -156,6 +145,8 @@ def main():
         
         if sorted_models[2] == 'linear':
             points_linear += 3
+        elif sorted_models[2] == 'ransac':
+            points_ransac += 3
         elif sorted_models[2] == 'rigid':
             points_rigid += 3
         elif sorted_models[2] == 'lasso':
@@ -165,26 +156,41 @@ def main():
         
         if sorted_models[3] == 'linear':
             points_linear += 2
+        elif sorted_models[3] == 'ransac':
+            points_ransac += 2
         elif sorted_models[3] == 'rigid':
             points_rigid += 2
         elif sorted_models[3] == 'lasso':
             points_lasso += 2
         elif sorted_models[3] == 'elastic':
             points_elastic += 2
+        
+        if sorted_models[4] == 'linear':
+            points_linear += 1
+        elif sorted_models[4] == 'ransac':
+            points_ransac += 1
+        elif sorted_models[4] == 'rigid':
+            points_rigid += 1
+        elif sorted_models[4] == 'lasso':
+            points_lasso += 1
+        elif sorted_models[4] == 'elastic':
+            points_elastic += 1
 
         r2_elastic_points[index] = points_elastic
         r2_linear_points[index] = points_linear
         r2_lasso_points[index] = points_lasso
         r2_rigid_points[index] = points_rigid
+        r2_ransac_points[index] = points_ransac
 
     ############################# Prints  #############################
 
     # After the loop, print the total points for each model
-    print(f"Total Points - Linear: {points_linear}, Ridge: {points_rigid}, Lasso: {points_lasso}, ElasticNet: {points_elastic}")
+    print(f"Total Points - Linear: {points_linear}, RANSAC: {points_ransac}, Ridge: {points_rigid}, Lasso: {points_lasso}, ElasticNet: {points_elastic}")
 
     # Determine the model with the most points
     points = {
         'linear': points_linear,
+        'ransac': points_ransac,
         'rigid': points_rigid,
         'lasso': points_lasso,
         'elastic': points_elastic
@@ -192,13 +198,19 @@ def main():
 
     best_model = max(points, key=points.get)
     print(f"The model with the highest points is: {best_model}")
+
+    print("alpha rigid: ", model_rigid.alpha_)
+    print("alpha lasso: ", model_lasso.alpha_)
+    print("alpha elastic: ", model_elastic.alpha_)
     
     plt.figure(figsize=(10, 6))
     
     plt.plot(range(len(r2_linear_points)),r2_linear_points, color='red', label='y_linear')
     plt.plot(range(len(r2_rigid_points)),r2_rigid_points, color='blue', label='y_rigid')
     plt.plot(range(len(r2_lasso_points)),r2_lasso_points, color='green', label='y_lasso')
-    plt.plot(range(len(r2_elastic_points)),r2_elastic_points, color='black', label='y_elastic')    
+    plt.plot(range(len(r2_elastic_points)),r2_elastic_points, color='black', label='y_elastic')
+    plt.plot(range(len(r2_ransac_points)),r2_ransac_points, color='yellow', label='y_ransac')
+    
     
     plt.title('Models Scores')
     plt.xlabel('Interactions')

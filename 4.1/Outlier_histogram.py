@@ -7,9 +7,16 @@ from datetime import datetime
 
 
 def take_out_bad_value(y_true,y_pred):
+    
     dif_array = np.zeros(len(y_true))
+    
     for i in range(len(y_true)):
-        dif_array[i] = abs(y_true[i].item() - y_pred[i].item())
+        
+        y = y_true[i][0]
+    
+        y_calc_pred = y_pred[i][0]
+        
+        dif_array[i] = abs(y_true[i] - y_pred[i])
 
     index_max_value = np.argmax(dif_array)
 
@@ -33,7 +40,7 @@ def main():
     data_y = data_y.reshape(-1, 1)  
     y = scaler_y.fit_transform(data_y)
     best_r2 = 0
-    r2_Array = np.zeros(200)
+    dif_array = np.zeros(200)
     # Normalize the entire dataset (all 5 features)
     scaler_X = MinMaxScaler()
     X = scaler_X.fit_transform(data_x[:, :5])
@@ -49,22 +56,19 @@ def main():
     Y = model_linear.predict(X)
 
     for i in range(200):
-        r2_Array[i] = abs(y[i]-Y[i])
+        dif_array[i] = abs(y[i]-Y[i])
         
-
-    Y = np.zeros((np.shape(X)[0],1))
-    Y_rigid = np.zeros((np.shape(X)[0],1))
      
     #############################  PLOTS  #############################
     
     plt.figure(figsize=(10, 6))
     
-    # plt.scatter(partition_array,r_mean_array, color='red', label='y')
+    plt.hist(dif_array,bins=30, edgecolor='black')
     
-    plt.xlabel('Partition')
-    plt.ylabel('R2 Values')
+    plt.title("Histogram of the differences between the true and predicted values")
+    plt.ylabel('Number of samples')
+    plt.xlabel('Difference between true and predicted Values')
 
-    plt.legend()
     plt.grid(True)
     plt.show()
     
