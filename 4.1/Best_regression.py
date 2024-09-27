@@ -3,70 +3,24 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV, RANSACRegressor, ElasticNetCV
 from sklearn.model_selection import train_test_split
-from datetime import datetime
 
-def outliers(data):
+
+def take_out_bad_value(y_true,y_pred):
     
-    # Compute quartiles
-    Q1 = np.percentile(data, 25)
-    # Q2 = np.median(data)  # or np.percentile(data, 50)
-    Q3 = np.percentile(data, 75)
-
-    # Compute interquartile range (IQR)
-    IQR = Q3 - Q1
-
-    # Compute whiskers
-    lower_whisker = np.min(data[data >= Q1 - 1.5 * IQR])
-    upper_whisker = np.max(data[data <= Q3 + 1.5 * IQR])
-
-    # Find outliers
-    #outliers = np.where(data[(data < Q1 - 1.5 * IQR) | (data > Q3 + 1.5 * IQR)])
-    outliers = np.where((data < lower_whisker) | (data > upper_whisker))[0]
+    dif_array = np.zeros(len(y_true))
     
-    return outliers
-    
-def best_partition(X, y):
-    
-    r_Array = np.zeros(46)
-    r_mean_array = np.zeros(46)
-    partition_array = np.zeros(46)
-    
-    for index in range(46):
-
-        for index2 in range(46):
-            # Split the dataset
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= (0.05 + (index-1)*0.01), random_state=None, shuffle=True)
-            
-            #############################  LINEAR REGRESSION  #############################
-            
-            partition = 0.05 + (index-1)*0.01
-            
-            y_train.ravel()
-            
-            # Initialize the linear regression model
-            model_linear = LinearRegression()
-
-            # Fit the model on the data
-            model_linear.fit(X_train, y_train)
-
-            # Predict the target values (optional)
-            Y = model_linear.predict(X_test)
-            
-            # Calculates R2 Coeficient
-            r2 = model_linear.score(X_test, y_test)
-            
-            r_Array[index2] = r2
+    for i in range(len(y_true)):
         
-        partition_array[index] = partition 
-        
-        r_mean_array[index] = np.mean(r_Array)
+        y = y_true[i][0]
     
-    best_partition = partition_array[np.argmax(r_mean_array)]
+        y_calc_pred = y_pred[i][0]
         
-    print("Best partition: ", best_partition)
-    print("Partition Array: ", partition_array)
+        dif_array[i] = abs(y - y_calc_pred)
 
-    return best_partition
+    index_max_value = np.argmax(dif_array)
+
+    return index_max_value
+
 
 def main():
     
@@ -85,11 +39,11 @@ def main():
     X = scaler_X.fit_transform(data_x[:, :5])
     
     
-    r2_elastic = np.zeros(400)
-    r2_lasso = np.zeros(400)
-    r2_rigid = np.zeros(400)
-    r2_ransac = np.zeros(400)
-    r2_linear = np.zeros(400)
+    r2_elastic = np.zeros(1000)
+    r2_lasso = np.zeros(1000)
+    r2_rigid = np.zeros(1000)
+    r2_ransac = np.zeros(1000)
+    r2_linear = np.zeros(1000)
     
     estimated_coef = np.zeros((5, 3)) 
     
@@ -102,14 +56,34 @@ def main():
     points_lasso = 0
     points_elastic = 0
     
-    partiotion = best_partition(X, y)
+    number_outliers = int(data_x.shape[0] * 0.25)
+    
+    ransac_x = data_x
+    ransac_y = data_y
+    
+    for i in range(number_outliers):
+
+        # Initialize the linear regression model
+        model_linear = LinearRegression()
+
+        # Fit the model on the normalized data
+        model_linear.fit(data_x, data_y)
+
+        # Predict the target values (optional)
+        Y = model_linear.predict(data_x)
+
+        bad_index = take_out_bad_value(data_y,Y)
+
+        data_y = np.delete(data_y, bad_index, axis=0)
+        data_x = np.delete(data_x, bad_index, axis=0)
+    
     
     ######################## train multiple times to get the best model ###################3
     
-    for index in range(400):
+    for index in range(1000):
 
         # Split the dataset
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = partiotion, random_state=None)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state=None)
         
         y_train.ravel()
 
@@ -123,7 +97,7 @@ def main():
         
         #############################  RANSAC REGRESSION  ############################
         
-        model_ransac = RANSACRegressor(random_state=0).fit(X_train,y_train )
+        model_ransac = RANSACRegressor(random_state=0).fit(ransac_x,ransac_y)
         
         r2_ransac[index]  = model_ransac.score(X_test, y_test)
         
@@ -246,6 +220,16 @@ def main():
     print("alpha rigid: ", model_rigid.alpha_)
     print("alpha lasso: ", model_lasso.alpha_)
     print("alpha elastic: ", model_elastic.alpha_)
+    
+    plt.figure(figsize=(10, 6))
+    
+    plt.scatter(range(len(r2_linear)),r2_linear, color='red', label='y_linear')
+    plt.scatter(range(len(r2_rigid)),r2_rigid, color='blue', label='y_rigid')
+    plt.scatter(range(len(r2_lasso)),r2_lasso, color='green', label='y_lasso')
+    plt.scatter(range(len(r2_elastic)),r2_elastic, color='black', label='y_elastic')
+    plt.scatter(range(len(r2_ransac)),r2_ransac, color='yellow', label='y_ransac')
+    
+    plt.show()
 
     
 

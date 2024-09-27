@@ -74,8 +74,20 @@ def main():
     data_x_test = np.load('x_test.npy')
     
     alphas_gen1 = np.arange(0.01, 10, 0.01)
+    number_outliers = int(data_x.shape[0] * 0.25) # 25% of the data is outliers
     
-    number_outliers = int(data_x.shape[0] * 0.25)
+    #############################  Normalization  ############################# 
+        
+    scaler_y = MinMaxScaler()
+    data_y = data_y.reshape(-1, 1)  
+    y = scaler_y.fit_transform(data_y)
+    
+    scaler_X = MinMaxScaler()
+    X = scaler_X.fit_transform(data_x[:, :5])
+    X_test_file = scaler_X.fit_transform(data_x_test[:, :5])
+    
+    ##################################### outlier removal #####################################
+    
     
     for i in range(number_outliers):
 
@@ -92,17 +104,19 @@ def main():
 
         data_y = np.delete(data_y, bad_index, axis=0)
         data_x = np.delete(data_x, bad_index, axis=0)
+        
+        
+    ##################################### model prediction #####################################
 
     # Initialize the rigid regression model
     model_rigid = RidgeCV(alphas = alphas_gen1).fit(data_x,data_y)
     
     # Predict 
     Y_rigid = model_rigid.predict(data_x_test)
-
-    # Calculates R2 Coeficient
-    # r2_rigid = model_rigid.score(data_x_test, y_test)
-
-    # sse_rigid = sse(y_test,Y_rigid)
+    
+    Y_rigid = scaler_y.inverse_transform(Y_rigid.reshape(-1, 1)) # Invert the normalization
+    
+    np.save('Ytest_Regression', Y_rigid)
     
     plt.figure(figsize=(10, 6))
     
