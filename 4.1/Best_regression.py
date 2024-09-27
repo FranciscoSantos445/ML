@@ -4,7 +4,6 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression, RidgeCV, LassoCV, RANSACRegressor, ElasticNetCV
 from sklearn.model_selection import train_test_split
 
-
 def take_out_bad_value(y_true,y_pred):
     
     dif_array = np.zeros(len(y_true))
@@ -220,6 +219,13 @@ def main():
     print("alpha rigid: ", model_rigid.alpha_)
     print("alpha lasso: ", model_lasso.alpha_)
     print("alpha elastic: ", model_elastic.alpha_)
+    
+    for i in range(r2_elastic):
+        r2_linear[i] += r2_linear[i-1]
+        r2_rigid[i] += r2_rigid[i-1]
+        r2_lasso[i] += r2_lasso[i-1]
+        r2_elastic[i] += r2_elastic[i-1]
+        r2_ransac[i] += r2_ransac[i-1]
     
     plt.figure(figsize=(10, 6))
     
