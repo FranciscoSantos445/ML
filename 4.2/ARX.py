@@ -169,6 +169,8 @@ n,m,d,model,y_pred,y_test_out = grid_search_arx(y, u)
 # Generate the output for u_test
 y_generated = generate_output_for_u_test(model, u_test, n, m, d)
 
+print(n,m,d)
+
 # Plot the actual and predicted output
 plt.figure(figsize=(12, 6))
 
@@ -190,4 +192,5 @@ plt.ylabel('Output y(k)')
 plt.legend()
 plt.grid()
 
+plt.tight_layout()  # Automatically adjust spacing
 plt.show()

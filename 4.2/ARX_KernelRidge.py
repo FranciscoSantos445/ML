@@ -16,6 +16,7 @@ def grid_search_arx(y, u):
     m_values (list): List of possible values for m (exogenous input order)
     d_values (list): List of possible values for d (input time delay)
 
+<<<<<<< HEAD:4.2/ARX.py
     Returns:
     best_n, best_m, best_d: The best values for n, m, and d based on MSE
     best_model: The trained model with the best parameters
@@ -61,6 +62,35 @@ def grid_search_arx(y, u):
                     pass # Skip this combination if it causes an error
     
     return best_n, best_m, best_d, best_model, y_best_pred, y_best_test
+=======
+
+# def best_paramaters(u_train, y_train, u_test, y_test):
+#     n_values = range(1, 10)  # Search over n from 1 to 9
+#     m_values = range(1, 10)  # Search over m from 1 to 9
+#     d_values = range(1, 10)  # Search over d from 1 to 9
+#     best_sse = 500000
+#     best_params=(0,0,0)
+#     for n in n_values:
+#         for m in m_values:
+#             for d in d_values:
+#                 try:
+#                     # Evaluate the ARX model for this combination of n, m, and d using SSE
+#                     sse = evaluate_arx_model_sse(n, m, d, u_train, y_train, u_test, y_test)
+                    
+#                     # Check if this is the best SSE we've found so far
+#                     if sse < best_sse:
+#                         best_sse = sse
+#                         best_params = (n, m, d)
+                        
+#                     print(f"n={n}, m={m}, d={d}, SSE={sse}, Best_params={best_params}")
+                    
+#                 except Exception as e:
+#                     # Handle cases where a combination doesn't work
+#                     print(f"Error with n={n}, m={m}, d={d}: {e}")
+    
+#     print("Best params: ", best_params)
+#     return best_params
+>>>>>>> c0a4787bce8ea8835c277982f80c58c0db13e24f:4.2/ARX_KernelRidge.py
 
 # Function to create the regressor matrix phi(k) and the corresponding output vector y(k)
 def build_regressor_matrix(y, u, n, m, d):
@@ -84,9 +114,40 @@ def build_regressor_matrix(y, u, n, m, d):
     # Determine the number of rows in the regressor matrix
     num_rows = N - max(n, m + d)
     
+<<<<<<< HEAD:4.2/ARX.py
     # Initialize the regressor matrix and output vector
     phi = np.zeros((num_rows, n + m + 1))
     y_out = np.zeros(num_rows)
+=======
+    X_train, X_test, y_train, y_test = train_test_split(data_x, data_y, test_size= 0.3, random_state=None, shuffle=True)
+
+    ##################################### Best paramaters #####################################
+
+    n,m,d = 4,5,3
+ 
+    ##################################### model prediction #####################################
+
+
+     # Create ARX regressor matrices
+    X_train, Y_train = create_arx_regressors(X_train, y_train, n, m, d)
+    X_test, Y_test = create_arx_regressors(X_test, y_test, n, m, d)
+    
+    # Train Kernel Ridge Regression model with RBF kernel
+    rbf_regressor = KernelRidge(kernel='rbf', gamma=0.1, alpha=1.0)
+    rbf_regressor.fit(X_train, Y_train)
+    
+    print("Dimension X_test: ", np.shape(X_test))
+
+    # Predict on the test set
+    y_pred = rbf_regressor.predict(X_test)
+
+    print("Dimension y_test: ", np.shape(Y_test))
+    print("Dimension y_pred: ", np.shape(y_pred))
+
+    # Predict on test data (iteratively)
+    y_test_pred = []
+    y_test_actual = np.zeros(len(y_test))
+>>>>>>> c0a4787bce8ea8835c277982f80c58c0db13e24f:4.2/ARX_KernelRidge.py
     
     # Populate the regressor matrix and output vector
     for i in range(num_rows):
@@ -129,6 +190,7 @@ def generate_output_for_u_test(model, u_test, n, m, d, y_initial=None):
         # Build the regressor for the current step k
         phi_k = np.zeros(n + m + 1)
         
+<<<<<<< HEAD:4.2/ARX.py
         # Add past y values
         phi_k[:n] = -y_generated[k-n:k][::-1]  # Autoregressive part
         
@@ -146,6 +208,20 @@ def generate_output_for_u_test(model, u_test, n, m, d, y_initial=None):
         
         # Predict the next output using the model
         y_generated[k] = model.predict(phi_k.reshape(1, -1))
+=======
+        y_test_pred.append(y_next[0])  # Append the prediction to the list
+
+    # Take the last 400 samples of the predicted test output (as per the problem)
+    y_test_pred_final = np.array(y_test_pred[-400:])
+
+    # # Save the final prediction to submit
+    np.save('y_test_pred.npy', y_test_pred_final)
+
+    # For evaluation (if actual test output y_test is available):
+    mse = mean_squared_error(Y_test, y_pred)
+
+    print(f'Mean Squared Error on test set: {mse}')
+>>>>>>> c0a4787bce8ea8835c277982f80c58c0db13e24f:4.2/ARX_KernelRidge.py
     
     return y_generated
 
@@ -168,8 +244,6 @@ n,m,d,model,y_pred,y_test_out = grid_search_arx(y, u)
 
 # Generate the output for u_test
 y_generated = generate_output_for_u_test(model, u_test, n, m, d)
-
-print(n,m,d)
 
 # Plot the actual and predicted output
 plt.figure(figsize=(12, 6))
