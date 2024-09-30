@@ -74,6 +74,7 @@ def main():
     
     data_x = np.load('u_train.npy')
     data_y = np.load('output_train.npy')
+    data_x_test = np.load('u_test.npy')
 
     ##################################### Splitting and best parameters #####################################   
     
@@ -102,6 +103,34 @@ def main():
     print("Dimension y_test: ", np.shape(Y_test))
     print("Dimension y_pred: ", np.shape(y_pred))
 
+    # Predict on test data (iteratively)
+    y_test_pred = []
+    y_test_actual = np.zeros(len(y_test))
+    
+    y_test_pred = rbf_regressor.predict(X_test) # Predict on the test set ?????
+
+    # Initialize the first `n` values of y_test_pred with zero (or use provided initial conditions)
+    y_test_pred = list(y_train[-n:])  # Start with the last n values from training set ???????????'
+
+    # Iteratively predict y_test
+    for k in range(len(X_test)):
+        # Create the regressor vector for the current step
+        y_lags = y_test_pred[-n:]
+        u_lags = [X_test[k - d - i] for i in range(m+1)]
+        
+        phi_k = np.array(y_lags + u_lags).reshape(1, -1)
+        
+        # Predict the next value
+        y_next = rbf_regressor.predict(phi_k)
+        
+        y_test_pred.append(y_next[0])  # Append the prediction to the list
+
+    # Take the last 400 samples of the predicted test output (as per the problem)
+    y_test_pred_final = np.array(y_test_pred[-400:])
+
+    # # Save the final prediction to submit
+    np.save('y_test_pred.npy', y_test_pred_final)
+
     # For evaluation (if actual test output y_test is available):
     mse = mean_squared_error(Y_test, y_pred)
 
@@ -109,8 +138,8 @@ def main():
     
     plt.figure(figsize=(10, 6))
     
-    plt.scatter(range(len(y_test)),y_test, color='red', label='y')
-    plt.scatter(range(len(y_pred)), y_pred, color='blue', label='y')
+    # plt.scatter(range(len(y_test)),y_test, color='red', label='y')
+    # plt.scatter(range(len(data_y)), data_y, color='blue', label='y')
     # plt.scatter(range(len(data_x_test)), data_x_test, color='yellow', label='X_teste_file')
 
     plt.title('Noggas')
