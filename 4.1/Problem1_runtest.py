@@ -14,9 +14,9 @@ def take_out_bad_value(y_true,y_pred):
     
     for i in range(len(y_true)):
         
-        y = y_true[i][0]
+        y = y_true[i]
     
-        y_calc_pred = y_pred[i][0]
+        y_calc_pred = y_pred[i]
         
         dif_array[i] = abs(y - y_calc_pred)
 
@@ -32,17 +32,8 @@ def main():
     
     alphas_gen1 = np.arange(0.01, 10, 0.01)
     number_outliers = int(data_x.shape[0] * 0.25) # 25% of the data is outliers
-    
-    #############################  Normalization  ############################# 
-        
-    scaler_y = MinMaxScaler()
-    data_y = data_y.reshape(-1, 1)  
-    y = scaler_y.fit_transform(data_y) # normalizes dataset
-    
-    scaler_X = MinMaxScaler()
-    X = scaler_X.fit_transform(data_x[:, :5]) # normalizes dataset
-    X_test_file = scaler_X.fit_transform(data_x_test[:, :5]) # normalizes dataset
-    
+
+
     ##################################### outlier removal #####################################
     
     
@@ -70,13 +61,9 @@ def main():
     
     # Predict 
     Y_rigid = model_rigid.predict(data_x_test)
-    
-    Y_rigid = scaler_y.inverse_transform(Y_rigid.reshape(-1, 1)) # Invert the normalization
-    
+  
     np.save('y_test', Y_rigid)
 
-    print("\nDimension: ", np.shape(Y_rigid))
-    
 if __name__ == "__main__":
     
     main()
