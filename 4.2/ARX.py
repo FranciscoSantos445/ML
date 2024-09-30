@@ -97,9 +97,11 @@ def main():
     # Predict on test data (iteratively)
     y_test_pred = []
     y_test_actual = np.zeros(len(y_test))
+    
+    y_test_pred = rbf_regressor.predict(X_test) # Predict on the test set ?????
 
     # Initialize the first `n` values of y_test_pred with zero (or use provided initial conditions)
-    y_test_pred = list(y_train[-n:])  # Start with the last n values from training set
+    y_test_pred = list(y_train[-n:])  # Start with the last n values from training set ???????????'
 
     # Iteratively predict y_test
     for k in range(len(X_test)):
