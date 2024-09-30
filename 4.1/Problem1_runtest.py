@@ -14,9 +14,9 @@ def take_out_bad_value(y_true,y_pred):
     
     for i in range(len(y_true)):
         
-        y = y_true[i]
+        y = y_true[i][0]
     
-        y_calc_pred = y_pred[i]
+        y_calc_pred = y_pred[i][0]
         
         dif_array[i] = abs(y - y_calc_pred)
 
@@ -37,11 +37,11 @@ def main():
         
     scaler_y = MinMaxScaler()
     data_y = data_y.reshape(-1, 1)  
-    y = scaler_y.fit_transform(data_y)
+    y = scaler_y.fit_transform(data_y) # normalizes dataset
     
     scaler_X = MinMaxScaler()
-    X = scaler_X.fit_transform(data_x[:, :5])
-    X_test_file = scaler_X.fit_transform(data_x_test[:, :5])
+    X = scaler_X.fit_transform(data_x[:, :5]) # normalizes dataset
+    X_test_file = scaler_X.fit_transform(data_x_test[:, :5]) # normalizes dataset
     
     ##################################### outlier removal #####################################
     
@@ -57,7 +57,7 @@ def main():
         # Predict the target values (optional)
         Y = model_linear.predict(data_x)
 
-        bad_index = take_out_bad_value(data_y,Y)
+        bad_index = take_out_bad_value(data_y,Y) # deletes worse value
 
         data_y = np.delete(data_y, bad_index, axis=0)
         data_x = np.delete(data_x, bad_index, axis=0)
@@ -73,7 +73,9 @@ def main():
     
     Y_rigid = scaler_y.inverse_transform(Y_rigid.reshape(-1, 1)) # Invert the normalization
     
-    np.save('Ytest_Regression', Y_rigid)
+    np.save('y_test', Y_rigid)
+
+    print("\nDimension: ", np.shape(Y_rigid))
     
 if __name__ == "__main__":
     

@@ -38,15 +38,15 @@ def main():
     X = scaler_X.fit_transform(data_x[:, :5])
     
     
-    r2_elastic = np.zeros(1000)
-    r2_lasso = np.zeros(1000)
-    r2_rigid = np.zeros(1000)
-    r2_linear = np.zeros(1000)
+    r2_elastic = np.zeros(100)
+    r2_lasso = np.zeros(100)
+    r2_rigid = np.zeros(100)
+    r2_linear = np.zeros(100)
     
-    r2_elastic_points = np.zeros(1000)
-    r2_lasso_points = np.zeros(1000)
-    r2_rigid_points = np.zeros(1000)
-    r2_linear_points = np.zeros(1000)
+    r2_elastic_points = np.zeros(100)
+    r2_lasso_points = np.zeros(100)
+    r2_rigid_points = np.zeros(100)
+    r2_linear_points = np.zeros(100)
     
     estimated_coef = np.zeros((5, 3)) 
     
@@ -79,7 +79,7 @@ def main():
     
     ######################## train multiple times to get the best model ###################3
     
-    for index in range(1000):
+    for index in range(100):
 
         # Split the dataset
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state=None)
