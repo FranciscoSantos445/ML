@@ -70,6 +70,7 @@ def main():
     
     data_x = np.load('u_train.npy')
     data_y = np.load('output_train.npy')
+    data_x_test = np.load('u_test.npy')
 
     ##################################### Splitting and best parameters #####################################   
     
@@ -101,10 +102,10 @@ def main():
     y_test_pred = list(y_train[-n:])  # Start with the last n values from training set
 
     # Iteratively predict y_test
-    for k in range(len(u_test)):
+    for k in range(len(X_test)):
         # Create the regressor vector for the current step
         y_lags = y_test_pred[-n:]
-        u_lags = [u_test[k - d - i] for i in range(m+1)]
+        u_lags = [X_test[k - d - i] for i in range(m+1)]
         
         phi_k = np.array(y_lags + u_lags).reshape(1, -1)
         
@@ -125,9 +126,9 @@ def main():
     
     plt.figure(figsize=(10, 6))
     
-    plt.scatter(range(len(y_test)),y_test, color='red', label='y')
+    # plt.scatter(range(len(y_test)),y_test, color='red', label='y')
     # plt.scatter(range(len(data_y)), data_y, color='blue', label='y')
-    plt.scatter(range(len(data_x_test)), data_x_test, color='yellow', label='X_teste_file')
+    # plt.scatter(range(len(data_x_test)), data_x_test, color='yellow', label='X_teste_file')
 
     plt.title('Noggas')
     plt.xlabel('Index')
