@@ -65,7 +65,7 @@ def main():
     
     for index in range(46):
 
-        for index2 in range(1000):
+        for index2 in range(10000):
             # Split the dataset
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= (0.05 + (index-1)*0.01), random_state=None, shuffle=True)
             
@@ -80,12 +80,9 @@ def main():
 
             # Fit the model on the data
             model_linear.fit(X_train, y_train)
-
-            # Predict the target values (optional)
-            Y = model_linear.predict(X_test)
             
             # Calculates R2 Coeficient
-            r2 = sse(y_test, Y)
+            r2 = model_linear.score(X_test,y_test)
             
             r_Array[index2] = r2
         
