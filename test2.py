@@ -2,65 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
-import itertools
-
-def grid_search_arx(y, u):
-    """
-    Perform grid search over n, m, d values to find the best ARX model based on MSE.
-
-    Parameters:
-    y (numpy array): Output sequence (time series data for y)
-    u (numpy array): Input sequence (time series data for u)
-    n_values (list): List of possible values for n (autoregressive order)
-    m_values (list): List of possible values for m (exogenous input order)
-    d_values (list): List of possible values for d (input time delay)
-
-    Returns:
-    best_n, best_m, best_d: The best values for n, m, and d based on MSE
-    best_model: The trained model with the best parameters
-    best_mse: The mean squared error of the best model
-    """
-    best_mse = float('inf')  # Initialize to a large value
-    best_n, best_m, best_d = None, None, None
-    best_model = None
-    
-    n_values = range(1, 9)  # Search over n from 1 to 9
-    m_values = range(1, 9)  # Search over m from 1 to 9
-    d_values = range(1, 9)  # Search over d from 1 to 9
-    for n in n_values:
-        for m in m_values:
-            for d in d_values:
-                try:
-
-                    # Build the regressor matrix for the current combination of n, m, d
-                    phi, y_out = build_regressor_matrix(y, u, n, m, d)
-                    
-                    # Split into training and testing sets
-                    phi_train, phi_test, y_train_out, y_test_out = train_test_split(phi, y_out, test_size=0.3, random_state=42)
-                    
-                    # Train the model
-                    model = LinearRegression(fit_intercept=False)
-                    model.fit(phi_train, y_train_out)
-                    
-                    # Predict on the test set
-                    y_pred = model.predict(phi_test)
-                    
-                    # Calculate mean squared error
-                    mse = mean_squared_error(y_test_out, y_pred)
-                    
-                    # If this combination gives a better result, update the best parameters
-                    if mse < best_mse:
-                        best_mse = mse
-                        best_n, best_m, best_d = n, m, d
-                        best_model = model
-                        y_best_pred = y_pred
-                        y_best_test = y_test_out
-                        
-                except Exception as e:
-                    pass # Skip this combination if it causes an error
-    
-    return best_n, best_m, best_d, best_model, y_best_pred, y_best_test
 
 # Function to create the regressor matrix phi(k) and the corresponding output vector y(k)
 def build_regressor_matrix(y, u, n, m, d):
@@ -157,8 +98,23 @@ y = np.load('output_train.npy')
 u = np.load('u_train.npy')
 u_test = np.load('u_test.npy')
 
-# Perform grid search to find the best ARX model
-n,m,d,model,y_pred,y_test_out = grid_search_arx(y, u)
+# ARX model parameters
+n = 2  # Order of autoregressive part (number of past y values)
+m = 2  # Order of exogenous part (number of past u values)
+d = 1  # Time delay for the input sequence
+
+# Build the regressor matrix and output vector
+phi, y_out = build_regressor_matrix(y, u, n, m, d)
+
+phi_train, phi_test, y_train_out, y_test_out = train_test_split(phi, y_out, test_size=0.3)
+
+# Fit the linear regression model to estimate theta (ARX parameters)
+model = LinearRegression(fit_intercept=False)  # No intercept needed since it's handled in phi
+model.fit(phi_train, y_train_out)
+
+y_pred = model.predict(phi_test)
+
+y_test = model.predict
 
 # # Retrieve the estimated parameters (theta)
 # theta_estimated = model.coef_
