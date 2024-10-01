@@ -5,6 +5,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 import itertools
 
+def sse(y_true, y_pred):
+        
+    return np.sum((y_true - y_pred) ** 2 )
+
 def grid_search_arx(y, u):
     """
     Perform grid search over n, m, d values to find the best ARX model based on MSE.
@@ -18,16 +22,20 @@ def grid_search_arx(y, u):
 
     Returns:
     best_n, best_m, best_d: The best values for n, m, and d based on MSE
-    best_model: The trained model with the best parameters
+    best_model: The model with the best parameters
     best_mse: The mean squared error of the best model
+    y_best_pred: The predictions using the best model
+    y_best_test: The test for the best model
     """
-    best_mse = float('inf')  # Initialize to a large value
+    
+    best_sse = float('inf')  # Initialize to a large value
     best_n, best_m, best_d = None, None, None
     best_model = None
     
     n_values = range(1, 9)  # Search over n from 1 to 9
     m_values = range(1, 9)  # Search over m from 1 to 9
     d_values = range(1, 9)  # Search over d from 1 to 9
+    
     for n in n_values:
         for m in m_values:
             for d in d_values:
@@ -47,11 +55,11 @@ def grid_search_arx(y, u):
                     y_pred = model.predict(phi_test)
                     
                     # Calculate mean squared error
-                    mse = mean_squared_error(y_test_out, y_pred)
+                    sse_model = sse(y_test_out, y_pred)
                     
                     # If this combination gives a better result, update the best parameters
-                    if mse < best_mse:
-                        best_mse = mse
+                    if sse_model < best_sse:
+                        best_sse = sse_model
                         best_n, best_m, best_d = n, m, d
                         best_model = model
                         y_best_pred = y_pred
@@ -62,41 +70,32 @@ def grid_search_arx(y, u):
     
     return best_n, best_m, best_d, best_model, y_best_pred, y_best_test
 
-# Function to create the regressor matrix phi(k) and the corresponding output vector y(k)
 def build_regressor_matrix(y, u, n, m, d):
     """
     Create the regressor matrix phi and output vector for the ARX model.
 
-    Parameters:
-    y (numpy array): Output sequence (time series data for y)
-    u (numpy array): Input sequence (time series data for u)
-    n (int): Order of the autoregressive part (number of past y values)
-    m (int): Order of the exogenous input part (number of past u values)
-    d (int): Time delay for the input sequence
-
     Returns:
-    phi (numpy array): Regressor matrix
-    y_out (numpy array): Output vector (corresponding to y(k))
+    phi (numpy array): phi(k)
+    y_out (numpy array): y(k)
     """
     # Number of samples
     N = len(y)
     
-    # Determine the number of rows in the regressor matrix
+    # Determine the number of rows
     num_rows = N - max(n, m + d)
     
-    # Initialize the regressor matrix and output vector
+    # Initializition
     phi = np.zeros((num_rows, n + m + 1))
     y_out = np.zeros(num_rows)
     
-    # Populate the regressor matrix and output vector
     for i in range(num_rows):
-        # Create the autoregressive part (past y values)
-        phi[i, :n] = -y[i:i + n][::-1]  # Reverse the order of y terms
+        # Create phy slice of y values
+        phi[i, :n] = -y[i:i + n][::-1]  # assign the y slice of phi
         
-        # Create the exogenous input part (past u values)
-        phi[i, n:] = u[i + d:i + d + m + 1][::-1]  # Reverse the order of u terms
+        # Create phi slice of u values
+        phi[i, n:] = u[i + d:i + d + m + 1][::-1]  # assign the u slice of phi
         
-        # Output vector
+        # y(k)
         y_out[i] = y[i + max(n, m + d)]
     
     return phi, y_out
@@ -160,16 +159,15 @@ u_test = np.load('u_test.npy')
 # Perform grid search to find the best ARX model
 n,m,d,model,y_pred,y_test_out = grid_search_arx(y, u)
 
-# # Retrieve the estimated parameters (theta)
-# theta_estimated = model.coef_
-
-# Optional: Use initial values of y for the first few steps (can use y_train_out[-n:] for example)
-# y_initial = y_train_out[-n:]  # The last n values of y from training data
+y_initial = y[-n:]  # Use the last best_n values of y for initialization
 
 # Generate the output for u_test
-y_generated = generate_output_for_u_test(model, u_test, n, m, d)
+y_generated = generate_output_for_u_test(model, u_test, n, m, d, y_initial)
 
-print(n,m,d)
+#print best model parameters
+print( n, m, d, "\n")
+
+print( "SSE: ", sse(y_test_out, y_pred), "\n")
 
 # Plot the actual and predicted output
 plt.figure(figsize=(12, 6))
@@ -177,7 +175,9 @@ plt.figure(figsize=(12, 6))
 # Plot actual output
 plt.subplot(2, 1, 1)
 plt.plot(range(len(y_test_out)), y_test_out, label='Actual Output', color='blue')
-plt.plot(range(len(y_pred)), y_pred, label='Predicted Output', linestyle='--', color='red')
+plt.plot(range(len(y_pred)), y_pred, label='Predicted Output',linestyle='--', color='red')
+# plt.scatter(range(len(y_test_out)), y_test_out, label='Actual Output', color='blue')
+# plt.scatter(range(len(y_pred)), y_pred, label='Predicted Output', color='red')
 plt.title('ARX Model: Actual vs Predicted Output')
 plt.xlabel('Time step (k)')
 plt.ylabel('Output y(k)')
