@@ -100,7 +100,7 @@ def build_regressor_matrix(y, u, n, m, d):
     
     return phi, y_out
 
-def generate_output_for_u_test(model, u_test, n, m, d):
+def generate_output_for_u_test(model, u_test, n, m, d, y_initial=None):
     """
     Generate output for a given u_test input sequence where no output (y_test) is available.
 
@@ -117,7 +117,11 @@ def generate_output_for_u_test(model, u_test, n, m, d):
     """
     N = len(u_test)
     
-    y_generated = np.zeros(N)
+    # Initialize the output array with zeros or provided initial y values
+    if y_initial is None:
+        y_generated = np.zeros(N)
+    else:
+        y_generated = np.concatenate([y_initial, np.zeros(N - len(y_initial))])
     
     # Iterate through the input data to predict the output step by step
     for k in range(max(n, m + d), N):
@@ -155,44 +159,23 @@ u_test = np.load('u_test.npy')
 # Perform grid search to find the best ARX model
 n,m,d,model,y_pred,y_test_out = grid_search_arx(y, u)
 
+y_initial = y[-n:]  # Use the last best_n values of y for initialization
+
 # Generate the output for u_test
-y_generated = generate_output_for_u_test(model, u_test, n, m, d)
+y_generated = generate_output_for_u_test(model, u_test, n, m, d, y_initial)
 
 y_output = y_generated[-400:]
 
-#print best model parameters
-print( n, m, d, "\n")
+y_generated_wht_initial = generate_output_for_u_test(model, u_test, n, m, d)
 
-print( "SSE: ", sse(y_test_out, y_pred), "\n")
+y_output_wht_initial = y_generated_wht_initial[-400:]
 
-# Plot the actual and predicted output
-plt.figure(figsize=(12, 6))
-
-# Plot actual output
-plt.subplot(2, 1, 1)
-plt.plot(range(len(y_test_out)), y_test_out, label='Actual Output', color='blue')
-plt.plot(range(len(y_pred)), y_pred, label='Predicted Output',linestyle='--', color='red')
-# plt.scatter(range(len(y_test_out)), y_test_out, label='Actual Output', color='blue')
-# plt.scatter(range(len(y_pred)), y_pred, label='Predicted Output', color='red')
-plt.title('ARX Model: Actual vs Predicted Output')
-plt.xlabel('Time step (k)')
-plt.ylabel('Output y(k)')
-plt.legend()
-plt.grid()
-
-plt.subplot(2, 1, 2)
-plt.plot(range(len(y_generated)), y_generated, label='Generated Output (y)', color='blue')
-plt.title('Generated Output for u_test Using ARX Model')
-plt.xlabel('Time step (k)')
-plt.ylabel('Output y(k)')
-plt.legend()
-plt.grid()
-
-plt.tight_layout()  # Automatically adjust spacing
+print(mean_squared_error(y_output, y_output_wht_initial))
 
 # Plot the actual and predicted output
 plt.figure()
 plt.plot(range(len(y_output)), y_output, label='Generated Output (y)', color='blue')
+plt.plot(range(len(y_output_wht_initial)), y_output_wht_initial, label='Generated Output (y) without initial values', color='red')
 plt.title('Generated Output for u_test Using ARX Model')
 plt.xlabel('Time step (k)')
 plt.ylabel('Output y(k)')
@@ -200,5 +183,6 @@ plt.legend()
 plt.grid()
 
 np.save('output_test.npy', y_output)
+
 
 plt.show()
