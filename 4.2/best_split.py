@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression, RidgeCV
+from sklearn.linear_model import RidgeCV
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 
@@ -8,7 +8,7 @@ def sse(y_true, y_pred):
         
     return np.sum((y_true - y_pred) ** 2 )
 
-def grid_search_arx(y, u):
+def grid_search_arx(y, u, model):
     """
     Perform grid search over n, m, d values to find the best ARX model based on MSE.
 
@@ -31,47 +31,45 @@ def grid_search_arx(y, u):
     best_n, best_m, best_d = None, None, None
     best_model = None
     
-    alphas_gen1 = np.arange(0.1, 100, 0.1)
-    
     n_values = range(1, 9)  # Search over n from 1 to 9
     m_values = range(1, 9)  # Search over m from 1 to 9
     d_values = range(1, 9)  # Search over d from 1 to 9
-    
-    for n in n_values:
-        for m in m_values:
-            for d in d_values:
-                try:
+    best_sses = np.zeros(46)
 
-                    # Build the regressor matrix for the current combination of n, m, d
-                    phi, y_out = build_regressor_matrix(y, u, n, m, d)
-                    
-                    # Split into training and testing sets
-                    phi_train, phi_test, y_train_out, y_test_out = train_test_split(phi, y_out, test_size=0.3, random_state=42)
-                    
-                    model = LinearRegression(fit_intercept=False)
-                    
-                    model_rigid = RidgeCV(alphas = alphas_gen1, fit_intercept=False)
-                    
-                    # Train the model linear regression
-                    model.fit(phi_train, y_train_out)
-                    
-                    # Predict on the test set
-                    y_pred = model.predict(phi_test)
-                    
-                    # Calculate mean squared error
-                    sse_model = sse(y_test_out, y_pred)
-                    
-                    # If this combination gives a better result, update the best parameters
-                    if sse_model < best_sse:
-                        best_sse = sse_model
-                        best_n, best_m, best_d = n, m, d
-                        best_model = model
-                        y_best_pred = y_pred
-                        y_best_test = y_test_out
+    for index in range(46):
+        for n in n_values:
+            for m in m_values:
+                for d in d_values:
+                    try:
+
+                        # Build the regressor matrix for the current combination of n, m, d
+                        phi, y_out = build_regressor_matrix(y, u, n, m, d)
                         
-                except Exception as e:
-                    pass # Skip this combination if it causes an error
-    
+                        # Split into training and testing sets
+                        phi_train, phi_test, y_train_out, y_test_out = train_test_split(phi, y_out, test_size=(0.05 + (index-1)*0.01), random_state=42)
+                        
+                        # Train the model linear regression
+                        model.fit(phi_train, y_train_out)
+                        
+                        # Predict on the test set
+                        y_pred = model.predict(phi_test)
+                        
+                        # Calculate mean squared error
+                        sse_model = sse(y_test_out, y_pred)
+                        
+                        # If this combination gives a better result, update the best parameters
+                        if sse_model < best_sse:
+                            best_sse = sse_model
+                            best_n, best_m, best_d = n, m, d
+                            best_model = model
+                            y_best_pred = y_pred
+                            y_best_test = y_test_out
+                            
+                    except Exception as e:
+                        pass # Skip this combination if it causes an error
+
+        best_sses[index] = best_sse
+
     return best_n, best_m, best_d, best_model, y_best_pred, y_best_test
 
 def build_regressor_matrix(y, u, n, m, d):
@@ -156,54 +154,15 @@ y = np.load('output_train.npy')
 u = np.load('u_train.npy')
 u_test = np.load('u_test.npy')
 
-# Perform grid search to find the best ARX model
-n,m,d,model,y_pred,y_test_out = grid_search_arx(y, u)
+alphas_gen1 = np.arange(0.1, 100, 0.1)
 
 
-# Generate the output for u_test
-y_generated = generate_output_for_u_test(model, u_test, n, m, d)
+model_rigid = RidgeCV(alphas = alphas_gen1, fit_intercept=False)
 
-y_output = y_generated[-400:]
 
-#print best model parameters
-print( n, m, d, "\n")
 
-print( "SSE: ", sse(y_test_out, y_pred), "\n")
+n,m,d,model_rigid,y_pred,y_test_out, best_sse = grid_search_arx(y, u,model_rigid)
 
-# Plot the actual and predicted output
-plt.figure(figsize=(12, 6))
 
-# Plot actual output
-plt.subplot(2, 1, 1)
-plt.plot(range(len(y_test_out)), y_test_out, label='Actual Output', color='blue')
-plt.plot(range(len(y_pred)), y_pred, label='Predicted Output',linestyle='--', color='red')
-# plt.scatter(range(len(y_test_out)), y_test_out, label='Actual Output', color='blue')
-# plt.scatter(range(len(y_pred)), y_pred, label='Predicted Output', color='red')
-plt.title('ARX Model: Actual vs Predicted Output')
-plt.xlabel('Time step (k)')
-plt.ylabel('Output y(k)')
-plt.legend()
-plt.grid()
+print(" n , m, d rigid : ",n[1],m[1],d[1],best_sse)
 
-plt.subplot(2, 1, 2)
-plt.plot(range(len(y_generated)), y_generated, label='Generated Output (y)', color='blue')
-plt.title('Generated Output for u_test Using ARX Model')
-plt.xlabel('Time step (k)')
-plt.ylabel('Output y(k)')
-plt.legend()
-plt.grid()
-
-plt.tight_layout()  # Automatically adjust spacing
-
-# Plot the actual and predicted output
-plt.figure()
-plt.plot(range(len(y_output)), y_output, label='Generated Output (y)', color='blue')
-plt.title('Generated Output for u_test Using ARX Model')
-plt.xlabel('Time step (k)')
-plt.ylabel('Output y(k)')
-plt.legend()
-plt.grid()
-
-np.save('output_test.npy', y_output)
-
-plt.show()
