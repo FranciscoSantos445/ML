@@ -1,42 +1,32 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.linear_model import RidgeCV
-from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression, RidgeCV
+from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import mean_squared_error
 
 def sse(y_true, y_pred):
         
     return np.sum((y_true - y_pred) ** 2 )
 
-def grid_search_arx(y, u, model):
-    """
-    Perform grid search over n, m, d values to find the best ARX model based on MSE.
-
-    Parameters:
-    y (numpy array): Output sequence (time series data for y)
-    u (numpy array): Input sequence (time series data for u)
-    n_values (list): List of possible values for n (autoregressive order)
-    m_values (list): List of possible values for m (exogenous input order)
-    d_values (list): List of possible values for d (input time delay)
-
-    Returns:
-    best_n, best_m, best_d: The best values for n, m, and d based on MSE
-    best_model: The model with the best parameters
-    best_mse: The mean squared error of the best model
-    y_best_pred: The predictions using the best model
-    y_best_test: The test for the best model
-    """
+def grid_search_arx_rigid(y, u):
+   
     
-    best_sse = float('inf')  # Initialize to a large value
+    best_MSE = float('inf')  # Initialize to a large value
     best_n, best_m, best_d = None, None, None
     best_model = None
+    y_best_pred = None
+    y_best_test = None 
+    
+    alphas_gen1 = np.arange(0.1, 1, 0.1)
     
     n_values = range(1, 9)  # Search over n from 1 to 9
     m_values = range(1, 9)  # Search over m from 1 to 9
     d_values = range(1, 9)  # Search over d from 1 to 9
-    best_sses = np.zeros(46)
+    
+    for i in range(5):
 
-    for index in range(46):
+        tscv = TimeSeriesSplit(n_splits=i)  # Define 5 splits for time series
+        
         for n in n_values:
             for m in m_values:
                 for d in d_values:
@@ -45,32 +35,36 @@ def grid_search_arx(y, u, model):
                         # Build the regressor matrix for the current combination of n, m, d
                         phi, y_out = build_regressor_matrix(y, u, n, m, d)
                         
-                        # Split into training and testing sets
-                        phi_train, phi_test, y_train_out, y_test_out = train_test_split(phi, y_out, test_size=(0.05 + (index-1)*0.01), random_state=42)
-                        
-                        # Train the model linear regression
-                        model.fit(phi_train, y_train_out)
-                        
-                        # Predict on the test set
-                        y_pred = model.predict(phi_test)
-                        
-                        # Calculate mean squared error
-                        sse_model = sse(y_test_out, y_pred)
-                        
-                        # If this combination gives a better result, update the best parameters
-                        if sse_model < best_sse:
-                            best_sse = sse_model
-                            best_n, best_m, best_d = n, m, d
-                            best_model = model
-                            y_best_pred = y_pred
-                            y_best_test = y_test_out
+                        # Perform cross-validation using TimeSeriesSplit
+                        for train_index, test_index in tscv.split(phi):
+                            phi_train, phi_test = phi[train_index], phi[test_index]
+                            y_train_out, y_test_out = y_out[train_index], y_out[test_index]
                             
+                            model_rigid = RidgeCV(alphas=alphas_gen1, fit_intercept=False)
+                            
+                            # Train the model linear regression
+                            model_rigid.fit(phi_train, y_train_out)
+                            
+                            # Predict on the test set
+                            y_pred_rigid = model_rigid.predict(phi_test)
+                            
+                            # Calculate MSE
+                            MSE_model = mean_squared_error(y_test_out, y_pred_rigid)
+                            
+                          
+                            # If this combination gives a better result, update the best parameters
+                            if MSE_model < best_MSE:
+                                best_MSE = MSE_model
+                                best_n, best_m, best_d = n, m, d
+                                y_best_pred = y_pred_rigid
+                                best_model = model_rigid
+                                y_best_test = y_test_out
+                    
                     except Exception as e:
-                        pass # Skip this combination if it causes an error
+                        pass  # Skip this combination if it causes an error
+    
+    return best_n, best_m, best_d, best_model, y_best_test, y_best_pred
 
-        best_sses[index] = best_sse
-
-    return best_n, best_m, best_d, best_model, y_best_pred, y_best_test
 
 def build_regressor_matrix(y, u, n, m, d):
     """
@@ -154,15 +148,35 @@ y = np.load('output_train.npy')
 u = np.load('u_train.npy')
 u_test = np.load('u_test.npy')
 
-alphas_gen1 = np.arange(0.1, 100, 0.1)
+# Perform grid search to find the best ARX model
+
+n2,m2,d2,model_rigid,y_pred_rigid,y_test_out2 = grid_search_arx_rigid(y, u)
 
 
-model_rigid = RidgeCV(alphas = alphas_gen1, fit_intercept=False)
+print('Best rigid parameters (n, m, d):', n2, m2, d2,"\n")
 
+print("MSE for rigid model: ", mean_squared_error(y_test_out2, y_pred_rigid),"\n")
 
+print("\n")
 
-n,m,d,model_rigid,y_pred,y_test_out, best_sse = grid_search_arx(y, u,model_rigid)
+print ("SSE for rigid model: ", sse(y_test_out2, y_pred_rigid),"\n")
 
+print("\n")
 
-print(" n , m, d rigid : ",n[1],m[1],d[1],best_sse)
+print("best alphas for rigid model: ", model_rigid.alpha_,"\n")
 
+# Plot the actual and predicted output
+plt.figure(figsize=(12, 6))
+
+# Plot actual output
+plt.subplot(2, 1, 1)
+plt.plot(range(len(y_pred_rigid)), y_pred_rigid, label='Predicted Output (Ridge)',linestyle='--', color='green')
+# plt.scatter(range(len(y_test_out)), y_test_out, label='Actual Output', color='blue')
+# plt.scatter(range(len(y_pred)), y_pred, label='Predicted Output', color='red')
+plt.title('ARX Model: Actual vs Predicted Output')
+plt.xlabel('Time step (k)')
+plt.ylabel('Output y(k)')
+plt.legend()
+plt.grid()
+
+plt.show()

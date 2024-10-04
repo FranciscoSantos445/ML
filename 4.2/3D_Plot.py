@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression, RidgeCV
 from sklearn.model_selection import TimeSeriesSplit
 from sklearn.metrics import mean_squared_error
+from mpl_toolkits.mplot3d import Axes3D
 
 def sse(y_true, y_pred):
         
@@ -229,72 +230,58 @@ else:
     y_output = y_generated[-400:]
 
 
-print('Best linear parameters (n, m, d):', n, m, d,"\n")
+n_values = [6, 7, 8, 9]
 
-print('Best rigid parameters (n, m, d):', n2, m2, d2,"\n")
+for idx, n in enumerate(n_values):
+    sse_matrix = np.zeros((len(m_values), len(d_values)))  # Matrix to store SSE for each combination of m and d
 
-print("MSE for linear model: ", mean_squared_error(y_test_out, y_pred),"\n")
+    # Iterate through combinations of m and d
+    for i, m in enumerate(m_values):
+        for j, d in enumerate(d_values):
+            try:
+                # Build the regressor matrix for current n, m, d
+                phi, y_out = build_regressor_matrix(y, u, n, m, d)
+                
+                # Perform TimeSeriesSplit and train the model
+                tscv = TimeSeriesSplit(n_splits=5)
+                for train_index, test_index in tscv.split(phi):
+                    phi_train, phi_test = phi[train_index], phi[test_index]
+                    y_train_out, y_test_out = y_out[train_index], y_out[test_index]
+                    
+                    # Train the model (you can switch between Linear and Ridge regression here)
+                    model = LinearRegression(fit_intercept=False)
+                    model.fit(phi_train, y_train_out)
+                    
+                    # Predict the test set
+                    y_pred = model.predict(phi_test)
+                    
+                    # Calculate SSE for this combination of m and d
+                    sse_value = sse(y_test_out, y_pred)
+                    
+                    # Store SSE in the matrix
+                    sse_matrix[i, j] = sse_value
+            
+            except Exception as e:
+                sse_matrix[i, j] = np.nan  # If there's an error, store NaN and continue
 
-print("MSE for rigid model: ", mean_squared_error(y_test_out2, y_pred_rigid),"\n")
+    # Create a meshgrid for m and d values
+    M, D = np.meshgrid(m_values, d_values)
+    
+    # Add a subplot for the current n value
+    ax = fig.add_subplot(2, 2, idx+1, projection='3d')
+    
+    # Plot the 3D surface for SSE vs m, d
+    surf = ax.plot_surface(M, D, sse_matrix.T, cmap='viridis', edgecolor='none')
 
-print("\n")
+    # Add title and labels
+    ax.set_title(f'SSE for n={n}')
+    ax.set_xlabel('m values')
+    ax.set_ylabel('d values')
+    ax.set_zlabel('SSE')
+    
+    # Add a color bar for the surface plot
+    fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5)
 
-print("SSE for linear model: ", sse(y_test_out, y_pred),"\n")
-
-print ("SSE for rigid model: ", sse(y_test_out2, y_pred_rigid),"\n")
-
-print("shape of y_output: ", y_output.shape)
-
-np.save('output_test.npy', y_output)
-
-# Plot the actual and predicted output
-plt.figure()
-plt.subplot(2, 1, 1)
-# Plot actual output
-plt.plot(range(len(y_test_out)), y_test_out, label='Actual Output', color='blue')
-plt.plot(range(len(y_pred)), y_pred, label='Predicted Output',linestyle='--', color='red')
-plt.plot(range(len(y_pred_rigid)), y_pred_rigid, label='Predicted Output (Ridge)',linestyle='--', color='green')
-# plt.scatter(range(len(y_test_out)), y_test_out, label='Actual Output', color='blue')
-# plt.scatter(range(len(y_pred)), y_pred, label='Predicted Output', color='red')
-plt.title('ARX Model: Actual vs Predicted Output')
-plt.xlabel('Time step (k)')
-plt.ylabel('Output y(k)')
-plt.legend()
-plt.grid()
-
-# Plot the actual and predicted output
-plt.subplot(2, 1, 2)
-plt.plot(range(len(y_generated)), y_generated, label='Generated Output (y)', color='blue')
-plt.title('Generated Output for u_test Using ARX Model')
-plt.xlabel('Time step (k)')
-plt.ylabel('Output y(k)')
-plt.legend()
-plt.grid()
-
-plt.tight_layout()  # Automatically adjust spacing
-
-# Plot the actual and predicted output
-plt.figure()
-plt.plot(range(len(y_output)), y_output, label='Generated Output (y)', color='blue')
-plt.title('Generated Output for u_test Using ARX Model')
-plt.xlabel('Time step (k)')
-plt.ylabel('Output y(k)')
-plt.legend()
-plt.grid()
-
-##################################### Plot Results #####################################
-plt.figure(figsize=(10, 6))
-
-plt.scatter(range(len(u)), u, color='red', label='U')
-plt.scatter(range(len(y)), y, color='blue', label='Data_y')
-start_index = 2049
-plt.scatter(range(start_index, start_index + len(u_test)), u_test, color='green', label='Data_x_test')
-plt.scatter(range(start_index, start_index + len(y_output)), y_output, color='yellow', label='Generated Output')
-
-plt.title('Predictions vs Actuals')
-plt.xlabel('Index')
-plt.ylabel('Output Value')
-plt.legend()
-plt.grid(True)
-
+# Show the final plot with all 4 surfaces
+plt.tight_layout()
 plt.show()
