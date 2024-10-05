@@ -201,7 +201,7 @@ def generate_output_for_u_test(model, u_test, n, m, d):
             phi_k[n:n + len(available_u)] = available_u
         
         # Predict the next output using the model
-        y_generated[k] = model.predict(phi_k.reshape(1, -1))
+        y_generated[k] = model.predict(phi_k.reshape(1, -1))[0]
     
     return y_generated
 
@@ -229,10 +229,16 @@ else:
 
     y_output = y_generated[-400:]
 
+# Range of m and d values to explore
+m_values = range(1, 9)
+d_values = range(1, 9)
+
+fig = plt.figure(figsize=(18, 12)) 
 
 n_values = [6, 7, 8, 9]
 
-for idx, n in enumerate(n_values):
+for idx, n in enumerate(range(1,10)):
+    
     sse_matrix = np.zeros((len(m_values), len(d_values)))  # Matrix to store SSE for each combination of m and d
 
     # Iterate through combinations of m and d
@@ -259,7 +265,7 @@ for idx, n in enumerate(n_values):
                     sse_value = sse(y_test_out, y_pred)
                     
                     # Store SSE in the matrix
-                    sse_matrix[i, j] = sse_value
+                    sse_matrix[i, j] = -sse_value
             
             except Exception as e:
                 sse_matrix[i, j] = np.nan  # If there's an error, store NaN and continue
@@ -268,10 +274,10 @@ for idx, n in enumerate(n_values):
     M, D = np.meshgrid(m_values, d_values)
     
     # Add a subplot for the current n value
-    ax = fig.add_subplot(2, 2, idx+1, projection='3d')
+    ax = fig.add_subplot(3, 3, idx+1, projection='3d')
     
     # Plot the 3D surface for SSE vs m, d
-    surf = ax.plot_surface(M, D, sse_matrix.T, cmap='viridis', edgecolor='none')
+    surf = ax.plot_surface(D, M, sse_matrix.T, cmap='viridis', edgecolor='none')
 
     # Add title and labels
     ax.set_title(f'SSE for n={n}')
