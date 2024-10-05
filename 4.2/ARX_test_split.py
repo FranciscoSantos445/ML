@@ -245,6 +245,8 @@ print ("SSE for rigid model: ", sse(y_test_out2, y_pred_rigid),"\n")
 
 print("shape of y_output: ", y_output.shape)
 
+print("y_output: ", y_output)
+
 np.save('output_test.npy', y_output)
 
 # Plot the actual and predicted output
@@ -289,6 +291,7 @@ plt.scatter(range(len(u)), u, color='red', label='U')
 plt.scatter(range(len(y)), y, color='blue', label='Data_y')
 start_index = 2049
 plt.scatter(range(start_index, start_index + len(u_test)), u_test, color='green', label='Data_x_test')
+start_index = 2149
 plt.scatter(range(start_index, start_index + len(y_output)), y_output, color='yellow', label='Generated Output')
 
 plt.title('Predictions vs Actuals')
