@@ -31,11 +31,11 @@ def grid_search_arx_rigid(y, u):
     best_n, best_m, best_d = None, None, None
     best_model = None
     
-    alphas_gen1 = np.arange(0.1, 100, 0.1)
+    alphas_gen1 = np.arange(0.1, 10, 0.05)
     
-    n_values = range(1, 9)  # Search over n from 1 to 9
-    m_values = range(1, 9)  # Search over m from 1 to 9
-    d_values = range(1, 9)  # Search over d from 1 to 9
+    n_values = range(1, 10)  # Search over n from 1 to 9
+    m_values = range(1, 10)  # Search over m from 1 to 9
+    d_values = range(1, 10)  # Search over d from 1 to 9
     
     for n in n_values:
         for m in m_values:
@@ -219,8 +219,6 @@ u_test = np.load('u_test.npy')
 
 # Perform grid search to find the best ARX model
 n,m,d,model,y_pred,y_test_out = grid_search_arx(y, u)
-
-print("Passed linear")
 
 n2,m2,d2,model_rigid,y_pred_rigid,y_test_out2 = grid_search_arx_rigid(y, u)
 
