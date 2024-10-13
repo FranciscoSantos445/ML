@@ -16,10 +16,34 @@ X = np.load('Xtrain1.npy')
 Y = np.load('Ytrain1.npy')
 
 datagen = tf.keras.preprocessing.image.ImageDataGenerator(
-    rotation_range= 90,
+    rotation_range= 5,
     horizontal_flip=True,
-    zoom_range=(0.9, 1.0)
+    vertical_flip=True,
+    zoom_range=(0.9, 1.0),
+    brightness_range=(0.9, 1.1)
 )
+
+# Generate additional images using the ImageDataGenerator
+augmented_images = []
+augmented_labels = []
+
+batch_size = 32
+augment_batches = 10  # How many batches of augmented data you want to generate
+
+for i in range(augment_batches):
+    for X_batch, y_batch in datagen.flow(X, Y, batch_size=batch_size):
+        augmented_images.append(X_batch)
+        augmented_labels.append(y_batch)
+        if len(augmented_images) >= augment_batches * batch_size:
+            break
+
+# Concatenate the augmented images and labels with the original dataset
+augmented_images = np.concatenate(augmented_images, axis=0)
+augmented_labels = np.concatenate(augmented_labels, axis=0)
+
+# Combine the original and augmented data
+X = np.concatenate([X, augmented_images], axis=0)
+Y = np.concatenate([Y, augmented_labels], axis=0)
 
 # Variable to keep track of the best F1 score and the best model
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
