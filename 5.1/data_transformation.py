@@ -9,41 +9,90 @@ from tensorflow.keras.regularizers import l2
 def z_score_normalizer(arr):
     return (arr - np.mean(arr)) / np.std(arr)
 
+# Function to generate augmented data
+def generate_augmented_data(X_class, Y_class, num_images):
+    augmented_images = []
+    augmented_labels = []
+    batch_size = 32
+    augment_batches = (num_images // batch_size) + 1  # Calculate how many batches are needed
+    
+    for i in range(augment_batches):
+        for X_batch, y_batch in datagen.flow(X_class, Y_class, batch_size=batch_size):
+            augmented_images.append(X_batch)
+            augmented_labels.append(y_batch)
+            if len(augmented_images) * batch_size >= num_images:
+                break
+    
+    # Flatten the list of augmented batches into a single array
+    augmented_images = np.concatenate(augmented_images, axis=0)[:num_images]
+    augmented_labels = np.concatenate(augmented_labels, axis=0)[:num_images]
+    
+    return augmented_images, augmented_labels
+
 #code with KFoldq , SMOTE and l2 regularization with grid search
 
 # Load the data
 X = np.load('Xtrain1.npy')
 Y = np.load('Ytrain1.npy')
+num_images = 1000 # Number of images to generate
+image_size = 48 # Size of the images
 
+X = z_score_normalizer(X)
+
+X = X.reshape((-1, image_size, image_size, 1))
+
+# Separate positive and negative examples
+X_positive = X[Y == 1]
+X_negative = X[Y == 0]
+Y_positive = Y[Y == 1]
+Y_negative = Y[Y == 0]
+
+# Find out the number of examples in each class
+num_positives = len(Y_positive)
+num_negatives = len(Y_negative)
+
+balance_count = num_positives - num_negatives
+
+# Number of additional images per class to generate (for both positive and negative)
+num_additional_images = 1000  # Change this number to generate more or less data
+
+print(f"Original dataset size: {len(Y)}")
+print(f"Positives: {num_positives}, Negatives: {num_negatives}")
+print(f"Generating {num_additional_images} augmented samples for each class.")
+
+# Set up the ImageDataGenerator for augmentation
 datagen = tf.keras.preprocessing.image.ImageDataGenerator(
-    rotation_range= 5,
-    horizontal_flip=True,
-    vertical_flip=True,
-    zoom_range=(0.9, 1.0),
-    brightness_range=(0.9, 1.1)
+    rotation_range=5,         # rotate the image by up to 5 degrees in either direction
+    horizontal_flip=True,     # flip the image horizontally
+    vertical_flip=True,       # flip the image vertically
+    zoom_range=(0.9, 1.0),    # zoom out by 10%
+    brightness_range=(0.9, 1.1)  # darken or brighten by 10%
 )
 
 # Generate additional images using the ImageDataGenerator
 augmented_images = []
 augmented_labels = []
 
-batch_size = 32
-augment_batches = 10  # How many batches of augmented data you want to generate
-
-for i in range(augment_batches):
-    for X_batch, y_batch in datagen.flow(X, Y, batch_size=batch_size):
-        augmented_images.append(X_batch)
-        augmented_labels.append(y_batch)
-        if len(augmented_images) >= augment_batches * batch_size:
-            break
-
-# Concatenate the augmented images and labels with the original dataset
-augmented_images = np.concatenate(augmented_images, axis=0)
-augmented_labels = np.concatenate(augmented_labels, axis=0)
+augmented_images, augmented_labels = generate_augmented_data(X_negative, Y_negative, balance_count)
 
 # Combine the original and augmented data
 X = np.concatenate([X, augmented_images], axis=0)
 Y = np.concatenate([Y, augmented_labels], axis=0)
+
+print (f"New dataset size: {len(Y)} (Balanced dataset)")
+
+# Generate additional data for both positive and negative classes
+X_positive_augmented, Y_positive_augmented = generate_augmented_data(X_positive, Y_positive, num_additional_images)
+X_negative_augmented, Y_negative_augmented = generate_augmented_data(X_negative, Y_negative, num_additional_images)
+
+print(f"Positive augmented data: {len(Y_positive_augmented)}")
+print(f"Negative augmented data: {len(Y_negative_augmented)}")
+
+# Combine the original and augmented data
+X = np.concatenate([X, X_positive_augmented, X_negative_augmented], axis=0)
+Y = np.concatenate([Y, Y_positive_augmented, Y_negative_augmented], axis=0)
+
+print(f"New dataset size: {len(Y)} (Balanced dataset)")
 
 # Variable to keep track of the best F1 score and the best model
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
@@ -51,26 +100,11 @@ best_f1_score = 0
 best_model = None
 l2_strengths = np.arange(0.001, 0.01, 0.001)
 
-# Normalize the data using Z-score normalization
-X = z_score_normalizer(X)
-
-# Reshape the data into 48x48 images
-image_size = 48
-X = X.reshape(-1, image_size, image_size, 1)  # Adding a channel dimension for grayscale
-
 # Split the data into training and testing sets
 for train_index, val_index in kf.split(X):
     # Split the data into train and validation sets for this fold
     X_train, X_test = X[train_index], X[val_index]
     y_train, y_test = Y[train_index], Y[val_index]
-
-    # X_train_flat = X_train.reshape(X_train.shape[0], -1)  # Flatten the images for SMOTE
-
-    # smote = SMOTE()  approch to use SMOTE
-    
-    # X_train, y_train = smote.fit_resample(X_train_flat, y_train)
-    
-    # X_train = X_train.reshape(-1, image_size, image_size, 1)
 
     for l2_strength in l2_strengths:
         
@@ -121,34 +155,34 @@ model = best_model # Use the best model
 test_loss, test_acc = model.evaluate(X_test, y_test)
 
 print(f'Test accuracy: {test_acc}')
-# Get predictions from the model
-predictions = model.predict(X_test)
+# # Get predictions from the model
+# predictions = model.predict(X_test)
 
 model.save('model_CNN.h5')
 
-# Convert probabilities to class labels (0 or 1)
-predicted_classes = (predictions > 0.5).astype(int)
+# # Convert probabilities to class labels (0 or 1)
+# predicted_classes = (predictions > 0.5).astype(int)
 
-# Print the first 10 actual and predicted values
-print("Actual labels: ", y_test[:10])
-print("Predicted labels: ", predicted_classes[:10].flatten())
+# # Print the first 10 actual and predicted values
+# print("Actual labels: ", y_test[:10])
+# print("Predicted labels: ", predicted_classes[:10].flatten())
 
-# Optional: Visualize a few test images with their predicted labels
-fig, axes = plt.subplots(2, 5, figsize=(12, 6))
-axes = axes.ravel()
+# # Optional: Visualize a few test images with their predicted labels
+# fig, axes = plt.subplots(2, 5, figsize=(12, 6))
+# axes = axes.ravel()
 
-for i in range(10):
-    axes[i].imshow(X_test[i].reshape(48, 48), cmap='gray')
-    axes[i].set_title(f'Pred: {predicted_classes[i][0]}, Actual: {y_test[i]}')
-    axes[i].axis('off')
+# for i in range(10):
+#     axes[i].imshow(X_test[i].reshape(48, 48), cmap='gray')
+#     axes[i].set_title(f'Pred: {predicted_classes[i][0]}, Actual: {y_test[i]}')
+#     axes[i].axis('off')
 
-# Plot the loss function along the epochs of the best model
-plt.figure()
-plt.plot(best_history.history['loss'], label='Training Loss')
-plt.title('Loss Function Over Epochs')
-plt.xlabel('Epochs')
-plt.ylabel('Loss')
-plt.legend()
+# # Plot the loss function along the epochs of the best model
+# plt.figure()
+# plt.plot(best_history.history['loss'], label='Training Loss')
+# plt.title('Loss Function Over Epochs')
+# plt.xlabel('Epochs')
+# plt.ylabel('Loss')
+# plt.legend()
 
-plt.tight_layout()
-plt.show()
+# plt.tight_layout()
+# plt.show()
