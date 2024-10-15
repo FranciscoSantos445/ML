@@ -27,13 +27,13 @@ new_predictions = model.predict(new_data)
 new_predicted_classes = (new_predictions > 0.5).astype(int)
 
 # Print the predictions for the first 10 images
-print("Predicted labels for new data: ", new_predicted_classes[:10].flatten())
+print("Predicted labels for new data: ", new_predicted_classes[:50].flatten())
 
 # Optional: Visualize a few of the new data images with their predicted labels
-fig, axes = plt.subplots(2, 5, figsize=(12, 6))
+fig, axes = plt.subplots(5, 10, figsize=(12, 6))
 axes = axes.ravel()
 
-for i in range(10):
+for i in range(50):
     axes[i].imshow(new_data[i].reshape(48, 48), cmap='gray')
     axes[i].set_title(f'Pred: {new_predicted_classes[i][0]}')
     axes[i].axis('off')

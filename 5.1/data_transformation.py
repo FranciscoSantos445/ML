@@ -125,7 +125,7 @@ for train_index, val_index in kf.split(X):
             tf.keras.layers.Flatten(),
             
             tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=l2(l2_strength)),
-            tf.keras.layers.Dropout(0.6),  # Dropout with 50% rate
+            tf.keras.layers.Dropout(0.6),  # Reset 60% of the network for each iteration
             tf.keras.layers.Dense(1, activation='sigmoid')  # Binary classification (crater or no crater)
         ])
 
