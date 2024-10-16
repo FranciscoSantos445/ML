@@ -119,7 +119,7 @@ y_pred = model.predict(X)
 accuracy = accuracy_score(Y, y_pred)
 print(f"Test Accuracy: {accuracy * 100:.2f}%")
 
-joblib.dump(model, 'best_knn_model.pkl')
+joblib.dump(model, 'best_knn_model.joblib')
 
 # # Get predictions from the model
 # predictions = model.predict(X_test)
