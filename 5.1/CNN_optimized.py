@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split,KFold
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score,accuracy_score
 import matplotlib.pyplot as plt
 from tensorflow.keras.regularizers import l2
 
@@ -154,6 +154,13 @@ model = best_model # Use the best model
 test_loss, test_acc = model.evaluate(X, Y)
 
 print(f'Test accuracy and test loss: {test_acc} {test_loss}')
+
+y_pred = model.predict(X)
+
+# Evaluate the model's performance
+accuracy = accuracy_score(Y, y_pred)
+print(f"Test Accuracy: {accuracy * 100:.2f}%")
+
 
 model.save('model_CNN.h5')
 

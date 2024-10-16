@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
-from sklearn.model_selection import train_test_split,KFold
-from sklearn.metrics import f1_score,accuracy_score
+from sklearn.model_selection import train_test_split,KFold,GridSearchCV
+from sklearn.metrics import f1_score,accuracy_score,make_scorer
 import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 
@@ -68,6 +68,15 @@ datagen = tf.keras.preprocessing.image.ImageDataGenerator(
     brightness_range=(0.9, 1.1)  # darken or brighten by 10%
 )
 
+param_grid = {
+    'n_estimators': [50, 100, 150, 200, 300],  # The number of trees in the forest
+    'max_depth': [None, 10, 20, 30],           # The maximum depth of the trees
+    'min_samples_split': [2, 5, 10],           # Minimum number of samples required to split an internal node
+    'min_samples_leaf': [1, 2, 4],             # Minimum number of samples required to be at a leaf node
+}
+
+scorer = make_scorer(f1_score)
+
 # Generate additional images using the ImageDataGenerator
 augmented_images = []
 augmented_labels = []
@@ -105,24 +114,31 @@ for train_index, val_index in kf.split(X):
     # Split the data into train and validation sets for this fold
     X_train, X_test = X[train_index], X[val_index]
     y_train, y_test = Y[train_index], Y[val_index]
+    
+    rf = RandomForestClassifier(random_state=42)
 
-    random_forest = RandomForestClassifier(n_estimators=100, random_state=42)  # Use 100 trees, you can adjust this
+    random_forest = GridSearchCV(estimator=rf, param_grid=param_grid, cv=5, scoring=scorer, verbose=2, n_jobs=-1)
     
     random_forest.fit(X_train, y_train)
-
+    
+    model = random_forest.best_estimator_
+    
     # Make predictions on the test set
-    y_pred = random_forest.predict(X_test)
+    y_pred = model.predict(X_test)
 
     # Compute F1 score for this fold
     f1 = f1_score(y_test,y_pred)
     
     if f1 > best_f1_score:
         best_f1_score = f1
-        best_model = random_forest  # Keep the best model
+        best_model = model  # Keep the best model
+
         
 model = best_model # Use the best model
 
-y_pred = random_forest.predict(X)
+model.save('Random_Forest_tree.h5')
+
+y_pred = model.predict(X)
 
 # Evaluate the model's performance
 accuracy = accuracy_score(Y, y_pred)

@@ -1,9 +1,10 @@
 import numpy as np
 import tensorflow as tf
-from sklearn.model_selection import train_test_split,KFold
+from sklearn.model_selection import train_test_split,KFold,GridSearchCV
 from sklearn.metrics import f1_score,accuracy_score
 import matplotlib.pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
+import joblib
 
 def z_score_normalizer(arr):
     return (arr - np.mean(arr)) / np.std(arr)
@@ -68,6 +69,12 @@ datagen = tf.keras.preprocessing.image.ImageDataGenerator(
     brightness_range=(0.9, 1.1)  # darken or brighten by 10%
 )
 
+param_grid = {
+    'n_neighbors': list(range(1, 31)),  # Try values of n_neighbors from 1 to 30
+    'weights': ['uniform', 'distance'],  # Test both uniform and distance-based weights
+    'metric': ['euclidean', 'manhattan', 'minkowski']  # Test different distance metrics
+}
+
 # Generate additional images using the ImageDataGenerator
 augmented_images = []
 augmented_labels = []
@@ -78,20 +85,13 @@ augmented_images, augmented_labels = generate_augmented_data(X_negative, Y_negat
 X = np.concatenate([X, augmented_images], axis=0)
 Y = np.concatenate([Y, augmented_labels], axis=0)
 
-print (f"New dataset size: {len(Y)} (Balanced dataset)")
-
 # Generate additional data for both positive and negative classes
 X_positive_augmented, Y_positive_augmented = generate_augmented_data(X_positive, Y_positive, num_additional_images)
 X_negative_augmented, Y_negative_augmented = generate_augmented_data(X_negative, Y_negative, num_additional_images)
 
-print(f"Positive augmented data: {len(Y_positive_augmented)}")
-print(f"Negative augmented data: {len(Y_negative_augmented)}")
-
 # Combine the original and augmented data
 X = np.concatenate([X, X_positive_augmented, X_negative_augmented], axis=0)
 Y = np.concatenate([Y, Y_positive_augmented, Y_negative_augmented], axis=0)
-
-print(f"New dataset size: {len(Y)} (Balanced dataset)")
 
 X = X.reshape((X.shape[0], -1))
 
@@ -100,33 +100,26 @@ kf = KFold(n_splits=5, shuffle=True, random_state=42)
 best_f1_score = 0
 best_model = None
 
-# Split the data into training and testing sets
-for train_index, val_index in kf.split(X):
-    # Split the data into train and validation sets for this fold
-    X_train, X_test = X[train_index], X[val_index]
-    y_train, y_test = Y[train_index], Y[val_index]
+x_train, x_test, y_train, y_test = train_test_split(X, Y, test_size=0.2,shuffle=True, random_state=42)
 
-    knn = KNeighborsClassifier(n_neighbors=3)
-    
-    knn.fit(X_train, y_train)
+knn = KNeighborsClassifier()
 
-    # Make predictions on the test set
-    y_pred = knn.predict(X_test)
+grid_search = GridSearchCV(estimator=knn, param_grid=param_grid, cv=5, scoring='f1', verbose=2, n_jobs=-1)
 
-    # Compute F1 score for this fold
-    f1 = f1_score(y_test,y_pred)
-    
-    if f1 > best_f1_score:
-        best_f1_score = f1
-        best_model = knn  # Keep the best model
-        
-model = best_model # Use the best model
+grid_search.fit(X, Y)
 
-y_pred = knn.predict(X)
+model = grid_search.best_estimator_
+
+# Make predictions on the test set
+y_pred = model.predict(x_test)
+
+y_pred = model.predict(X)
 
 # Evaluate the model's performance
 accuracy = accuracy_score(Y, y_pred)
 print(f"Test Accuracy: {accuracy * 100:.2f}%")
+
+joblib.dump(model, 'best_knn_model.pkl')
 
 # # Get predictions from the model
 # predictions = model.predict(X_test)
