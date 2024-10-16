@@ -1,10 +1,9 @@
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split,KFold
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score,accuracy_score
 import matplotlib.pyplot as plt
-from imblearn.over_sampling import SMOTE
-from tensorflow.keras.regularizers import l2
+from sklearn.neighbors import KNeighborsClassifier
 
 def z_score_normalizer(arr):
     return (arr - np.mean(arr)) / np.std(arr)
@@ -94,11 +93,12 @@ Y = np.concatenate([Y, Y_positive_augmented, Y_negative_augmented], axis=0)
 
 print(f"New dataset size: {len(Y)} (Balanced dataset)")
 
+X = X.reshape((X.shape[0], -1))
+
 # Variable to keep track of the best F1 score and the best model
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 best_f1_score = 0
 best_model = None
-l2_strengths = np.arange(0.001, 0.01, 0.001)
 
 # Split the data into training and testing sets
 for train_index, val_index in kf.split(X):
@@ -106,83 +106,29 @@ for train_index, val_index in kf.split(X):
     X_train, X_test = X[train_index], X[val_index]
     y_train, y_test = Y[train_index], Y[val_index]
 
-    for l2_strength in l2_strengths:
-        
-        # Define the CNN model
-        model = tf.keras.models.Sequential([
-            tf.keras.layers.Conv2D(32, (3, 3), activation='relu', kernel_regularizer=l2(l2_strength), input_shape=(48, 48, 1)),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.MaxPooling2D(2, 2),
-            
-            tf.keras.layers.Conv2D(64, (3, 3), activation='relu', kernel_regularizer=l2(l2_strength)),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.MaxPooling2D(2, 2),
+    knn = KNeighborsClassifier(n_neighbors=3)
+    
+    knn.fit(X_train, y_train)
 
-            tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=l2(l2_strength)),
-            tf.keras.layers.BatchNormalization(),
-            tf.keras.layers.MaxPooling2D(2, 2),
+    # Make predictions on the test set
+    y_pred = knn.predict(X_test)
 
-            tf.keras.layers.Flatten(),
-            
-            tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=l2(l2_strength)),
-            tf.keras.layers.Dropout(0.6),  # Reset 60% of the network for each iteration
-            tf.keras.layers.Dense(1, activation='sigmoid')  # Binary classification (crater or no crater)
-        ])
-
-        # Compile the model
-        history = model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-        
-        ################################# alterar valores para testar accuracy ##########################################
-        early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
-        
-        model.fit(datagen.flow(X_train, y_train, batch_size=32), epochs=50, validation_data=(X_test, y_test), callbacks=[early_stopping])
-        
-        # Make predictions on the validation set of the current fold
-        val_predictions = model.predict(X_test)
-        val_predicted_classes = (val_predictions > 0.5).astype(int)
-
-        # Compute F1 score for this fold
-        f1 = f1_score(y_test, val_predicted_classes)
-        
-        if f1 > best_f1_score:
-            best_f1_score = f1
-            best_model = model  # Keep the best model
-            best_history = history
+    # Compute F1 score for this fold
+    f1 = f1_score(y_test,y_pred)
+    
+    if f1 > best_f1_score:
+        best_f1_score = f1
+        best_model = knn  # Keep the best model
         
 model = best_model # Use the best model
 
-# Evaluate the model on test data
-test_loss, test_acc = model.evaluate(X_test, y_test)
+y_pred = knn.predict(X)
 
-print(f'Test accuracy: {test_acc}')
+# Evaluate the model's performance
+accuracy = accuracy_score(Y, y_pred)
+print(f"Test Accuracy: {accuracy * 100:.2f}%")
+
 # # Get predictions from the model
 # predictions = model.predict(X_test)
 
-model.save('model_CNN.h5')
-
-# # Convert probabilities to class labels (0 or 1)
-# predicted_classes = (predictions > 0.5).astype(int)
-
-# # Print the first 10 actual and predicted values
-# print("Actual labels: ", y_test[:10])
-# print("Predicted labels: ", predicted_classes[:10].flatten())
-
-# # Optional: Visualize a few test images with their predicted labels
-# fig, axes = plt.subplots(2, 5, figsize=(12, 6))
-# axes = axes.ravel()
-
-# for i in range(10):
-#     axes[i].imshow(X_test[i].reshape(48, 48), cmap='gray')
-#     axes[i].set_title(f'Pred: {predicted_classes[i][0]}, Actual: {y_test[i]}')
-#     axes[i].axis('off')
-
-# # Plot the loss function along the epochs of the best model
-# plt.figure()
-# plt.plot(best_history.history['loss'], label='Training Loss')
-# plt.title('Loss Function Over Epochs')
-# plt.xlabel('Epochs')
-# plt.ylabel('Loss')
-# plt.legend()
-
-# plt.tight_layout()
-# plt.show()
+#model.save('model_KNN.h5')
