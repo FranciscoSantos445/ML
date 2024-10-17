@@ -81,9 +81,6 @@ early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=1
 # Train the model
 history = model.fit(X_train, y_train, epochs=50, batch_size=32,callbacks=[early_stopping])
 
-# Save the updated model
-model.save('Model_CNN_updated.h5')
-
 X = np.load('Xtrain1.npy')
 Y = np.load('Ytrain1.npy')
 
@@ -106,6 +103,8 @@ accuracy = len(predicted_labels == Y) / len(Y)
 
 print(f'Accuracy of the model on the original data: {accuracy * 100:.2f}%')
 
+# Save the updated model
+model.save('Model_CNN_updated.h5')
 
 # Plot the images and their pseudo-labels
 fig, axes = plt.subplots(5, 5, figsize=(10, 10))
