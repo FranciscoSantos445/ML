@@ -7,32 +7,32 @@ from sklearn.metrics import mean_squared_error
 def sse(y_true, y_pred):
         
     return np.sum((y_true - y_pred) ** 2 )
-
-def grid_search_arx_rigid(y, u):
-   
     
+def grid_search_arx_rigid(y, u):
+
     best_MSE = float('inf')  # Initialize to a large value
     best_n, best_m, best_d = None, None, None
     best_model = None
+    phi_best_test = None
     y_best_pred = None
     y_best_test = None 
     
     alphas_gen1 = np.arange(0.3, 0.6, 0.05)
     
-    n_values = range(1, 9)  # Search over n from 1 to 9
-    m_values = range(1, 9)  # Search over m from 1 to 9
-    d_values = range(1, 9)  # Search over d from 1 to 9
+    n_values = range(1, 10)  # Search over n from 1 to 9
+    m_values = range(1, 10)  # Search over m from 1 to 9
+    d_values = range(1, 10)  # Search over d from 1 to 9
     
     tscv = TimeSeriesSplit(n_splits=5)  # Define 5 splits for time series
     
     for n in n_values:
         for m in m_values:
             for d in d_values:
-                try:
-
-                    # Build the regressor matrix for the current combination of n, m, d
-                    phi, y_out = build_regressor_matrix(y, u, n, m, d)
-                    
+                # Build the regressor matrix for the current combination of n, m, d
+                phi, y_out = build_regressor_matrix(y, u, n, m, d)
+                
+                if phi is not None:
+                
                     # Perform cross-validation using TimeSeriesSplit
                     for train_index, test_index in tscv.split(phi):
                         phi_train, phi_test = phi[train_index], phi[test_index]
@@ -40,7 +40,6 @@ def grid_search_arx_rigid(y, u):
                         
                         model_rigid = RidgeCV(alphas=alphas_gen1, fit_intercept=False)
                         
-                        # Train the model linear regression
                         model_rigid.fit(phi_train, y_train_out)
                         
                         # Predict on the test set
@@ -55,13 +54,11 @@ def grid_search_arx_rigid(y, u):
                             best_n, best_m, best_d = n, m, d
                             y_best_pred = y_pred_rigid
                             best_model = model_rigid
-                            y_best_test = y_test_out
-                
-                except Exception as e:
-                    pass  # Skip this combination if it causes an error
-    
-    return best_n, best_m, best_d, best_model, y_best_test, y_best_pred
+                            y_best_test = y_test_out                
+                                                
+    return best_n, best_m, best_d, best_model, y_best_pred, y_best_test
 
+                
 def grid_search_arx(y, u):
     """
     Perform grid search over n, m, d values to find the best ARX model based on MSE.
@@ -87,19 +84,19 @@ def grid_search_arx(y, u):
     y_best_pred = None
     y_best_test = None 
         
-    n_values = range(1, 9)  # Search over n from 1 to 9
-    m_values = range(1, 9)  # Search over m from 1 to 9
-    d_values = range(1, 9)  # Search over d from 1 to 9
+    n_values = range(1, 10)  # Search over n from 1 to 9
+    m_values = range(1, 10)  # Search over m from 1 to 9
+    d_values = range(1, 10)  # Search over d from 1 to 9
     
     tscv = TimeSeriesSplit(n_splits=5)  # Define 5 splits for time series
     
     for n in n_values:
         for m in m_values:
             for d in d_values:
-                try:
-
-                    # Build the regressor matrix for the current combination of n, m, d
-                    phi, y_out = build_regressor_matrix(y, u, n, m, d)
+                # Build the regressor matrix for the current combination of n, m, d
+                phi, y_out = build_regressor_matrix(y, u, n, m, d)
+                
+                if phi is not None:
                     
                     # Perform cross-validation using TimeSeriesSplit
                     for train_index, test_index in tscv.split(phi):
@@ -125,9 +122,6 @@ def grid_search_arx(y, u):
                             best_model = model
                             y_best_test = y_test_out
                 
-                except Exception as e:
-                    pass  # Skip this combination if it causes an error
-    
     return best_n, best_m, best_d, best_model, y_best_pred, y_best_test
 
 def build_regressor_matrix(y, u, n, m, d):
@@ -144,11 +138,18 @@ def build_regressor_matrix(y, u, n, m, d):
     # Determine the number of rows
     num_rows = N - max(n, m + d)
     
+    if num_rows <= 0 or N <= max(n, m + d):
+        return None, None
+    
     # Initializition
     phi = np.zeros((num_rows, n + m + 1))
     y_out = np.zeros(num_rows)
     
     for i in range(num_rows):
+        
+        if i + n > N or i + d + m + 1 > N:
+            return None, None
+        
         # Create phy slice of y values
         phi[i, :n] = -y[i:i + n][::-1]  # assign the y slice of phi
         
@@ -205,17 +206,18 @@ def generate_output_for_u_test(model, u_test, n, m, d):
     return y_generated
 
 
-# Example usage
-# Generate some example data for y (output) and u (input)
-# This is just an example. In practice, you would have actual time series data.
+# Load the data
 y = np.load('output_train.npy')
 u = np.load('u_train.npy')
 u_test = np.load('u_test.npy')
 
-# Perform grid search to find the best ARX model
+# Perform grid search to find the best ARX model for linear regression
 n,m,d,model,y_pred,y_test_out = grid_search_arx(y, u)
 
+# Perform grid search to find the best ARX model for ridge regression
 n2,m2,d2,model_rigid,y_pred_rigid,y_test_out2 = grid_search_arx_rigid(y, u)
+
+# chose best model based on SSE
 
 if sse(y_test_out, y_pred) < sse(y_test_out2, y_pred_rigid):
     # Generate the output for u_test
@@ -300,4 +302,4 @@ plt.ylabel('Output Value')
 plt.legend()
 plt.grid(True)
 
-plt.show()
+#plt.show()

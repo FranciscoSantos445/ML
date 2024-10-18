@@ -1,0 +1,2 @@
+Analizar os dados do y e verificar a disparidade entre 0's e 1's e criar imagens que sejam copias com transformaçoes aplicadas
+utilizar o novo dataset para ver as melhores features a tirar da imagem para fazer uma previsão mais exata
