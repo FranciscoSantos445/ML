@@ -26,16 +26,24 @@ new_predictions = model.predict(new_data)
 new_predicted_classes = (new_predictions > 0.5).astype(int)
 
 # Print the predictions for the first 10 images
-print("Predicted labels for new data: ", new_predicted_classes[:10].flatten())
+print("Predicted labels for new data: ", new_predicted_classes[:].flatten())
 
-# Optional: Visualize a few of the new data images with their predicted labels
-fig, axes = plt.subplots(2, 5, figsize=(12, 6))
-axes = axes.ravel()
+np.save ('Ytest1.npy', new_predicted_classes)
 
-for i in range(10):
-    axes[i].imshow(new_data[i].reshape(48, 48), cmap='gray')
-    axes[i].set_title(f'Pred: {new_predicted_classes[i][0]}')
-    axes[i].axis('off')
+zeros = new_predicted_classes[new_predicted_classes == 0]
+ones = new_predicted_classes[new_predicted_classes == 1]
+
+print("Destribuition of zeros: ", (len(zeros) / new_predicted_classes.shape[0])*100 )
+print ("Destribuition of ones: ", (len(ones) / new_predicted_classes.shape[0])*100 )
+
+# Plot the images and their predicted labels
+fig, axes = plt.subplots(4, 5, figsize=(12, 6))
+axes = axes.flatten()
+
+for img, ax, label in zip(new_data[:20], axes, new_predicted_classes[:20]):
+    ax.imshow(img.squeeze(), cmap='gray')
+    ax.set_title(f'Predicted: {label[0]}')
+    ax.axis('off')
 
 plt.tight_layout()
-plt.show()
+# plt.show()
