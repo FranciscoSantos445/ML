@@ -165,13 +165,26 @@ model.save('model_CNN.h5')
 #     axes[i].set_title(f'Pred: {predicted_classes[i][0]}, Actual: {y_test[i]}')
 #     axes[i].axis('off')
 
-# # Plot the loss function along the epochs of the best model
-# plt.figure()
-# plt.plot(best_history.history['loss'], label='Training Loss')
-# plt.title('Loss Function Over Epochs')
-# plt.xlabel('Epochs')
-# plt.ylabel('Loss')
-# plt.legend()
+# Plot the training and validation loss for the best model
+plt.figure(figsize=(12, 6))
 
-# plt.tight_layout()
+# Plot training loss and validation loss over the epochs
+plt.subplot(1, 2, 1)
+plt.plot(best_history.history['loss'], label='Training Loss')
+plt.plot(best_history.history['val_loss'], label='Validation Loss')
+plt.title('Training and Validation Loss Over Epochs')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+
+# Plot training accuracy and validation accuracy over the epochs
+plt.subplot(1, 2, 2)
+plt.plot(best_history.history['accuracy'], label='Training Accuracy')
+plt.plot(best_history.history['val_accuracy'], label='Validation Accuracy')
+plt.title('Training and Validation Accuracy Over Epochs')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
+
+plt.tight_layout()
 # plt.show()
