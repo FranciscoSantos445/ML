@@ -116,12 +116,12 @@ for train_index, val_index in kf.split(X):
         ])
 
         # Compile the model
-        history = model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
         
         ################################# alterar valores para testar accuracy ##########################################
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience = 4)
         
-        model.fit(X_train,y_train, batch_size=32, epochs=50, validation_data=(X_test, y_test), callbacks=[early_stopping])
+        history = model.fit(X_train,y_train, batch_size=32, epochs=50, validation_data=(X_test, y_test), callbacks=[early_stopping])
         
         # Make predictions on the validation set of the current fold
         val_predictions = model.predict(X_test)
