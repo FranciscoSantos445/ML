@@ -40,18 +40,6 @@ X = z_score_normalizer(X)
 
 X = X.reshape((-1, image_size, image_size, 1))
 
-# Separate positive and negative examples
-X_positive = X[Y == 1]
-X_negative = X[Y == 0]
-Y_positive = Y[Y == 1]
-Y_negative = Y[Y == 0]
-
-# Find out the number of examples in each class
-num_positives = len(Y_positive)
-num_negatives = len(Y_negative)
-
-balance_count = num_positives - num_negatives
-
 # Number of additional images per class to generate (for both positive and negative)
 num_additional_images = 1000  # Change this number to generate more or less data
 
@@ -59,38 +47,50 @@ num_additional_images = 1000  # Change this number to generate more or less data
 datagen = tf.keras.preprocessing.image.ImageDataGenerator(
     horizontal_flip=True,     # flip the image horizontally
     vertical_flip=True,       # flip the image vertically
-    brightness_range=(0.9, 1.1)  # darken or brighten by 10%
+    brightness_range=(0.9, 1.1)  # darken o brighten by 10%
 )
-
-# Generate additional images using the ImageDataGenerator
-augmented_images = []
-augmented_labels = []
-
-augmented_images, augmented_labels = generate_augmented_data(X_negative, Y_negative, balance_count)
-
-# Combine the original and augmented data
-X = np.concatenate([X, augmented_images], axis=0)
-Y = np.concatenate([Y, augmented_labels], axis=0)
-
-# Generate additional data for both positive and negative classes
-X_positive_augmented, Y_positive_augmented = generate_augmented_data(X_positive, Y_positive, num_additional_images)
-X_negative_augmented, Y_negative_augmented = generate_augmented_data(X_negative, Y_negative, num_additional_images)
-
-# Combine the original and augmented data
-X = np.concatenate([X, X_positive_augmented, X_negative_augmented], axis=0)
-Y = np.concatenate([Y, Y_positive_augmented, Y_negative_augmented], axis=0)
 
 # Variable to keep track of the best F1 score and the best model
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 best_f1_score = 0
 best_model = None
-l2_strengths = np.arange(0.001, 0.01, 0.001)
+l2_strengths = np.arange(0.001, 0.01, 0.002)
 
 # Split the data into training and testing sets
 for train_index, val_index in kf.split(X):
     # Split the data into train and validation sets for this fold
     X_train, X_test = X[train_index], X[val_index]
     y_train, y_test = Y[train_index], Y[val_index]
+    
+    # Separate positive and negative examples
+    X_positive = X_train[y_train == 1]
+    X_negative = X_train[y_train == 0]
+    Y_positive = y_train[y_train == 1]
+    Y_negative = y_train[y_train == 0]
+
+    # Find out the number of examples in each class
+    num_positives = len(Y_positive)
+    num_negatives = len(Y_negative)
+
+    balance_count = num_positives - num_negatives
+    
+    # Generate additional images using the ImageDataGenerator
+    augmented_images = []
+    augmented_labels = []
+
+    augmented_images, augmented_labels = generate_augmented_data(X_negative, Y_negative, balance_count)
+
+    # Combine the original and augmented data
+    x_train = np.concatenate([x_train, augmented_images], axis=0)
+    y_train = np.concatenate([y_train, augmented_labels], axis=0)
+
+    # Generate additional data for both positive and negative classes
+    X_positive_augmented, Y_positive_augmented = generate_augmented_data(X_positive, Y_positive, num_additional_images)
+    X_negative_augmented, Y_negative_augmented = generate_augmented_data(X_negative, Y_negative, num_additional_images)
+
+    # Combine the original and augmented data
+    x_train = np.concatenate([x_train, X_positive_augmented, X_negative_augmented], axis=0)
+    y_train = np.concatenate([y_train, Y_positive_augmented, Y_negative_augmented], axis=0)
 
     for l2_strength in l2_strengths:
         

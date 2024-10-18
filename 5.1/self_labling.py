@@ -76,7 +76,7 @@ print (f'Number of high-confidence samples: {len(X_train)}')
 # Retrain the model using the combined data
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=1)
+early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=2)
 
 # Train the model
 history = model.fit(X_train, y_train, epochs=50, batch_size=32,callbacks=[early_stopping])
