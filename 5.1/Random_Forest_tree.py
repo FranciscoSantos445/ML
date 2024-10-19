@@ -1,4 +1,4 @@
-##########################  RANDOM FOREST TREE ########################################################
+# Grupo 94
 
 import numpy as np
 import tensorflow as tf

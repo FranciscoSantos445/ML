@@ -1,3 +1,5 @@
+# Grupo 94
+
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -8,7 +10,7 @@ def z_score_normalizer(arr):
     return (arr - np.mean(arr)) / np.std(arr)
 
 # Load the trained model
-model = tf.keras.models.load_model('Model_CNN.h5')
+model = tf.keras.models.load_model('Model_CNN.h5', compile=True)
 
 # Load the new data
 new_data = np.load('Xtrain1_extra.npy')

@@ -1,3 +1,5 @@
+# Grupo 94
+
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split,KFold
@@ -28,7 +30,7 @@ def generate_augmented_data(X_class, Y_class, num_images):
     
     return augmented_images, augmented_labels
 
-#code with KFoldq , data augmentation and l2 regularization with grid search
+#code with KFoldq , data augmentation and l2 regularization, dropout and early stopping
 
 # Load the data
 X = np.load('Xtrain1.npy')
@@ -41,7 +43,7 @@ X = z_score_normalizer(X)
 X = X.reshape((-1, image_size, image_size, 1))
 
 # Number of additional images per class to generate (for both positive and negative)
-num_additional_images = 1000  # Change this number to generate more or less data
+num_additional_images = 1000 
 
 # Set up the ImageDataGenerator for augmentation
 datagen = tf.keras.preprocessing.image.ImageDataGenerator(
@@ -50,7 +52,7 @@ datagen = tf.keras.preprocessing.image.ImageDataGenerator(
     brightness_range=(0.9, 1.1)  # darken o brighten by 10%
 )
 
-# Variable to keep track of the best F1 score and the best model
+# initialize the KFold object and other variables
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 best_f1_score = 0
 best_model = None
@@ -94,7 +96,7 @@ for train_index, val_index in kf.split(X):
 
     for l2_strength in l2_strengths:
         
-        # Define the CNN model
+        # Define the CNN model with L2 regularization and 4 convolutional layers
         model = tf.keras.models.Sequential([
             tf.keras.layers.Conv2D(32, (3, 3), activation='relu', kernel_regularizer=l2(l2_strength), input_shape=(48, 48, 1)),
             tf.keras.layers.BatchNormalization(),
@@ -118,9 +120,10 @@ for train_index, val_index in kf.split(X):
         # Compile the model
         model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
         
-        ################################# alterar valores para testar accuracy ##########################################
+        # Set up early stopping to prevent overfitting
         early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience = 4)
         
+        # Train the model
         history = model.fit(X_train,y_train, batch_size=32, epochs=50, validation_data=(X_test, y_test), callbacks=[early_stopping])
         
         # Make predictions on the validation set of the current fold
@@ -130,14 +133,15 @@ for train_index, val_index in kf.split(X):
         # Compute F1 score for this fold
         f1 = f1_score(y_test, val_predicted_classes)
         
+        # Keep the best model 
         if f1 > best_f1_score:
             best_f1_score = f1
-            best_model = model  # Keep the best model
+            best_model = model  
             best_history = history
         
 model = best_model # Use the best model
 
-print("f1_score",best_f1_score) # Print the best F1 score
+print(f"F1 score: {best_f1_score:.3f}")
 
 model.save('model_CNN.h5')
 

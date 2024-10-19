@@ -1,3 +1,5 @@
+# Grupo 94
+
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split,KFold,GridSearchCV
@@ -29,8 +31,6 @@ def generate_augmented_data(X_class, Y_class, num_images):
     
     return augmented_images, augmented_labels
 
-#code with KFoldq , SMOTE and l2 regularization with grid search
-
 # Load the data
 X = np.load('Xtrain1.npy')
 Y = np.load('Ytrain1.npy')
@@ -43,13 +43,13 @@ num_additional_images = 1000  # Change this number to generate more or less data
 datagen = tf.keras.preprocessing.image.ImageDataGenerator(
     horizontal_flip=True,     # flip the image horizontally
     vertical_flip=True,       # flip the image vertically
-    brightness_range=(0.9, 1.1)  # darken o brighten by 10%
+    brightness_range=(0.9, 1.1)  # darken or brighten by 10%
 )
 
 param_grid = {
     'n_neighbors': list(range(1, 31)),  # Try values of n_neighbors from 1 to 30
-    'weights': ['distance'],  # Test both uniform and distance-based weights
-    'metric': ['cosine']  # Test different distance metrics
+    'weights': ['distance'],  # Test distance-based weights
+    'metric': ['cosine']  # Test cosine which is suitable for image data
 }
 
 X = z_score_normalizer(X)
@@ -90,6 +90,8 @@ y_train = np.concatenate([y_train, Y_positive_augmented, Y_negative_augmented], 
 
 X_train = X_train.reshape((X_train.shape[0], -1))
 X_test = X_test.reshape((X_test.shape[0], -1))
+
+# preform grid search
 
 knn = KNeighborsClassifier()
 
