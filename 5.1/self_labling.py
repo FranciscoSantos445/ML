@@ -1,39 +1,11 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score
 
 def z_score_normalizer(arr):
     return (arr - np.mean(arr)) / np.std(arr)
-
-# Function to generate augmented data
-def generate_augmented_data(X_class, Y_class, num_images):
-    augmented_images = []
-    augmented_labels = []
-    batch_size = 32
-    augment_batches = (num_images // batch_size) + 1  # Calculate how many batches are needed
-    
-    for i in range(augment_batches):
-        for X_batch, y_batch in datagen.flow(X_class, Y_class, batch_size=batch_size):
-            augmented_images.append(X_batch)
-            augmented_labels.append(y_batch)
-            if len(augmented_images) * batch_size >= num_images:
-                break
-    
-    # Flatten the list of augmented batches into a single array
-    augmented_images = np.concatenate(augmented_images, axis=0)[:num_images]
-    augmented_labels = np.concatenate(augmented_labels, axis=0)[:num_images]
-    
-    return augmented_images, augmented_labels
-
-num_images = 200 # Number of images to generate
-
-datagen = tf.keras.preprocessing.image.ImageDataGenerator(
-    rotation_range=5,         # rotate the image by up to 5 degrees in either direction
-    horizontal_flip=True,     # flip the image horizontally
-    vertical_flip=True,       # flip the image vertically
-    zoom_range=(0.9, 1.0),    # zoom out by 10%
-    brightness_range=(0.9, 1.1)  # darken or brighten by 10%
-)
 
 # Load the trained model
 model = tf.keras.models.load_model('Model_CNN.h5')
@@ -65,18 +37,12 @@ for pred in new_predictions:
 y_train = np.array([label for label in pseudo_labels if label is not None])
 X_train = new_data[:len(y_train)]  # Keep only high-confidence samples
 
-X_augmented , Y_augmented = generate_augmented_data(X_train, y_train, num_images)
-
-X_train = np.concatenate([X_train, X_augmented], axis=0)
-y_train = np.concatenate([y_train, Y_augmented], axis=0)
-
-print (f'Number of pseudo-labeled samples: {len(y_train)}')
-print (f'Number of high-confidence samples: {len(X_train)}')
+print(f'Number of high-confidence samples: {len(y_train)}')
 
 # Retrain the model using the combined data
 model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=2)
+early_stopping = tf.keras.callbacks.EarlyStopping(monitor='accuracy', patience=2)
 
 # Train the model
 history = model.fit(X_train, y_train, epochs=50, batch_size=32,callbacks=[early_stopping])
@@ -90,30 +56,40 @@ X = z_score_normalizer(X)
 # Reshape the data into 48x48 images with 1 channel (grayscale)
 X = X.reshape(-1, image_size, image_size, 1)
 
-indices = np.arange(X.shape[0])
-np.random.shuffle(indices)
-X, Y = X[indices], Y[indices]  # Shuffle the data
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 
 # Make predictions on the original data
-predictions = model.predict(X)
+predictions = model.predict(X_test)
 
 # Compare predictions with Y
-predicted_labels = (predictions > 0.5).astype(int).flatten()
-accuracy = len(predicted_labels == Y) / len(Y)
+val_predicted_classes = (predictions > 0.5).astype(int).flatten()
 
-print(f'Accuracy of the model on the original data: {accuracy * 100:.2f}%')
+f1 = f1_score(y_test, val_predicted_classes)
+
+print (f"F1 score: {f1:.3f}")
 
 # Save the updated model
 model.save('Model_CNN_updated.h5')
 
-# Plot the images and their pseudo-labels
-fig, axes = plt.subplots(5, 5, figsize=(10, 10))
-axes = axes.flatten()
+# Plotting the history of the best model
+plt.figure(figsize=(12, 6))
 
-for img, label, ax in zip(new_data[:25], pseudo_labels[:25], axes):
-    ax.imshow(img.squeeze(), cmap='gray')
-    ax.set_title(f'Label: {label}')
-    ax.axis('off')
+# Plot training loss and validation loss over the epochs from the best model's history
+plt.subplot(1, 2, 1)
+plt.plot(history.history['loss'], label='Training Loss')
+plt.title('Training and Validation Loss Over Epochs')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+
+# Plot training accuracy and validation accuracy over the epochs
+plt.subplot(1, 2, 2)
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.title('Training and Validation Accuracy Over Epochs')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
 
 plt.tight_layout()
 plt.show()

@@ -40,18 +40,6 @@ X = z_score_normalizer(X)
 
 X = X.reshape((-1, image_size, image_size, 1))
 
-# Separate positive and negative examples
-X_positive = X[Y == 1]
-X_negative = X[Y == 0]
-Y_positive = Y[Y == 1]
-Y_negative = Y[Y == 0]
-
-# Find out the number of examples in each class
-num_positives = len(Y_positive)
-num_negatives = len(Y_negative)
-
-balance_count = num_positives - num_negatives
-
 # Number of additional images per class to generate (for both positive and negative)
 num_additional_images = 1000  # Change this number to generate more or less data
 
@@ -59,38 +47,50 @@ num_additional_images = 1000  # Change this number to generate more or less data
 datagen = tf.keras.preprocessing.image.ImageDataGenerator(
     horizontal_flip=True,     # flip the image horizontally
     vertical_flip=True,       # flip the image vertically
-    brightness_range=(0.9, 1.1)  # darken or brighten by 10%
+    brightness_range=(0.9, 1.1)  # darken o brighten by 10%
 )
-
-# Generate additional images using the ImageDataGenerator
-augmented_images = []
-augmented_labels = []
-
-augmented_images, augmented_labels = generate_augmented_data(X_negative, Y_negative, balance_count)
-
-# Combine the original and augmented data
-X = np.concatenate([X, augmented_images], axis=0)
-Y = np.concatenate([Y, augmented_labels], axis=0)
-
-# Generate additional data for both positive and negative classes
-X_positive_augmented, Y_positive_augmented = generate_augmented_data(X_positive, Y_positive, num_additional_images)
-X_negative_augmented, Y_negative_augmented = generate_augmented_data(X_negative, Y_negative, num_additional_images)
-
-# Combine the original and augmented data
-X = np.concatenate([X, X_positive_augmented, X_negative_augmented], axis=0)
-Y = np.concatenate([Y, Y_positive_augmented, Y_negative_augmented], axis=0)
 
 # Variable to keep track of the best F1 score and the best model
 kf = KFold(n_splits=5, shuffle=True, random_state=42)
 best_f1_score = 0
 best_model = None
-l2_strengths = np.arange(0.001, 0.01, 0.001)
+l2_strengths = np.arange(0.001, 0.01, 0.002)
 
 # Split the data into training and testing sets
 for train_index, val_index in kf.split(X):
     # Split the data into train and validation sets for this fold
     X_train, X_test = X[train_index], X[val_index]
     y_train, y_test = Y[train_index], Y[val_index]
+    
+    # Separate positive and negative examples
+    X_positive = X_train[y_train == 1]
+    X_negative = X_train[y_train == 0]
+    Y_positive = y_train[y_train == 1]
+    Y_negative = y_train[y_train == 0]
+
+    # Find out the number of examples in each class
+    num_positives = len(Y_positive)
+    num_negatives = len(Y_negative)
+
+    balance_count = num_positives - num_negatives
+    
+    # Generate additional images using the ImageDataGenerator
+    augmented_images = []
+    augmented_labels = []
+
+    augmented_images, augmented_labels = generate_augmented_data(X_negative, Y_negative, balance_count)
+
+    # Combine the original and augmented data
+    X_train = np.concatenate([X_train, augmented_images], axis=0)
+    y_train = np.concatenate([y_train, augmented_labels], axis=0)
+
+    # Generate additional data for both positive and negative classes
+    X_positive_augmented, Y_positive_augmented = generate_augmented_data(X_positive, Y_positive, num_additional_images)
+    X_negative_augmented, Y_negative_augmented = generate_augmented_data(X_negative, Y_negative, num_additional_images)
+
+    # Combine the original and augmented data
+    X_train = np.concatenate([X_train, X_positive_augmented, X_negative_augmented], axis=0)
+    y_train = np.concatenate([y_train, Y_positive_augmented, Y_negative_augmented], axis=0)
 
     for l2_strength in l2_strengths:
         
@@ -137,41 +137,30 @@ for train_index, val_index in kf.split(X):
         
 model = best_model # Use the best model
 
-# Evaluate the model on test data
-test_loss, test_acc = model.evaluate(X, Y)
-
-y_pred = model.predict(X)
-
-# Evaluate the model's performance
-accuracy = accuracy_score(Y, y_pred)
-print(f"Test Accuracy: {accuracy * 100:.2f}%")
-
+print("f1_score",best_f1_score) # Print the best F1 score
 
 model.save('model_CNN.h5')
 
-# # Convert probabilities to class labels (0 or 1)
-# predicted_classes = (predictions > 0.5).astype(int)
+# Plotting the history of the best model
+plt.figure(figsize=(12, 6))
 
-# # Print the first 10 actual and predicted values
-# print("Actual labels: ", y_test[:10])
-# print("Predicted labels: ", predicted_classes[:10].flatten())
+# Plot training loss and validation loss over the epochs from the best model's history
+plt.subplot(1, 2, 1)
+plt.plot(best_history.history['loss'], label='Training Loss')
+plt.plot(best_history.history['val_loss'], label='Validation Loss')
+plt.title('Training and Validation Loss Over Epochs')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
 
-# # Optional: Visualize a few test images with their predicted labels
-# fig, axes = plt.subplots(2, 5, figsize=(12, 6))
-# axes = axes.ravel()
+# Plot training accuracy and validation accuracy over the epochs
+plt.subplot(1, 2, 2)
+plt.plot(best_history.history['accuracy'], label='Training Accuracy')
+plt.plot(best_history.history['val_accuracy'], label='Validation Accuracy')
+plt.title('Training and Validation Accuracy Over Epochs')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy')
+plt.legend()
 
-# for i in range(10):
-#     axes[i].imshow(X_test[i].reshape(48, 48), cmap='gray')
-#     axes[i].set_title(f'Pred: {predicted_classes[i][0]}, Actual: {y_test[i]}')
-#     axes[i].axis('off')
-
-# # Plot the loss function along the epochs of the best model
-# plt.figure()
-# plt.plot(best_history.history['loss'], label='Training Loss')
-# plt.title('Loss Function Over Epochs')
-# plt.xlabel('Epochs')
-# plt.ylabel('Loss')
-# plt.legend()
-
-# plt.tight_layout()
-# plt.show()
+plt.tight_layout()
+plt.show()

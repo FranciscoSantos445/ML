@@ -9,6 +9,8 @@ def z_score_normalizer(arr):
 # If you have saved the model, load it like this:
 model = tf.keras.models.load_model('Model_CNN.h5')
 
+model_trained = tf.keras.models.load_model('Model_CNN_updated.h5')
+
 # Load the new data
 new_data = np.load('Xtest1.npy')
 
@@ -22,28 +24,38 @@ new_data = new_data.reshape(-1, image_size, image_size, 1)
 # Make predictions on the new data
 new_predictions = model.predict(new_data)
 
+new_predictions_trained = model_trained.predict(new_data)
+
 # Convert the predicted probabilities to class labels (0 or 1)
 new_predicted_classes = (new_predictions > 0.5).astype(int)
 
-# Print the predictions for the first 10 images
-print("Predicted labels for new data: ", new_predicted_classes[:].flatten())
+new_predicted_classes_trained = (new_predictions_trained > 0.5).astype(int)
 
-np.save ('Ytest1.npy', new_predicted_classes)
+# Compare the new_predicted_classes with new_predicted_classes_trained
+comparison = new_predicted_classes == new_predicted_classes_trained
+comparison_result = np.all(comparison)
+
+print("Are the predictions from both models identical? ", comparison_result)
+
+if not comparison_result:
+    differing_indices = np.where(comparison == False)[0]
+    print("Indices where predictions differ: ", differing_indices)
+    
+    # Plot the images where predictions differ
+    if not comparison_result:
+        fig, axes = plt.subplots(4, 5, figsize=(12, 6))
+        axes = axes.flatten()
+        for idx, ax in zip(differing_indices[:20], axes):
+            ax.imshow(new_data[idx].squeeze(), cmap='gray')
+            ax.set_title(f'Pred: {new_predicted_classes[idx][0]}, Trained: {new_predicted_classes_trained[idx][0]}')
+            ax.axis('off')
+        plt.tight_layout()
+        plt.show()
+
+#np.save ('Ytest1.npy', new_predicted_classes)
 
 zeros = new_predicted_classes[new_predicted_classes == 0]
 ones = new_predicted_classes[new_predicted_classes == 1]
 
 print("Destribuition of zeros: ", (len(zeros) / new_predicted_classes.shape[0])*100 )
 print ("Destribuition of ones: ", (len(ones) / new_predicted_classes.shape[0])*100 )
-
-# Plot the images and their predicted labels
-fig, axes = plt.subplots(4, 5, figsize=(12, 6))
-axes = axes.flatten()
-
-for img, ax, label in zip(new_data[:20], axes, new_predicted_classes[:20]):
-    ax.imshow(img.squeeze(), cmap='gray')
-    ax.set_title(f'Predicted: {label[0]}')
-    ax.axis('off')
-
-plt.tight_layout()
-# plt.show()
